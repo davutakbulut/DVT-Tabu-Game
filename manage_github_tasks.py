@@ -5,10 +5,11 @@ Moves issues between Todo -> In Progress -> Done
 """
 
 import sys
+import os
 import urllib.request
 import json
 
-TOKEN = "YOUR_GITHUB_TOKEN"
+TOKEN = os.environ.get("GITHUB_TOKEN", "YOUR_GITHUB_TOKEN")
 PROJECT_ID = "PVT_kwHOAsupAs4Bg4u5"
 STATUS_FIELD_ID = "PVTSSF_lAHOAsupAs4Bg4u5zhf2mKg"
 
@@ -71,14 +72,14 @@ def list_items():
     print("-" * 75)
     return items
 
-def move_issue_status(issue_number: int, target_status: str):
+def move_issue_status(issue_number: int, target_status: str, all_items=None):
     target_status = target_status.lower()
     if target_status not in STATUS_MAP:
         print(f"Hata: Geçersiz durum '{target_status}'. Seçenekler: todo, in_progress, done")
         return
 
     option_id = STATUS_MAP[target_status]
-    items = list_items()
+    items = all_items if all_items is not None else list_items()
     target_item = None
     for it in items:
         content = it.get("content", {})
