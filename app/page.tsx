@@ -249,9 +249,13 @@ export default function HomePage() {
                 <Sparkles className="w-3 h-3 text-amber-400" /> Giriş Yap
               </button>
             ) : (
-              <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 py-1 px-2.5 rounded-lg border border-emerald-500/20 shrink-0 inline-flex items-center gap-1">
-                <Check className="w-3 h-3" /> Bağlı
-              </span>
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 py-1.5 px-2.5 rounded-lg border border-emerald-500/30 shrink-0 inline-flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                title="Profili Yönet / Çıkış Yap"
+              >
+                <Check className="w-3 h-3" /> {userEmail ? userEmail.split('@')[0] : 'Profilim'}
+              </button>
             )}
           </div>
 
