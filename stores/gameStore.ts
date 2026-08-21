@@ -47,6 +47,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     current_card: null,
     time_remaining: DEFAULT_GAME_SETTINGS.turn_duration,
     remaining_passes: DEFAULT_GAME_SETTINGS.pass_limit,
+    remaining_tabus: DEFAULT_GAME_SETTINGS.tabu_limit > 0 ? DEFAULT_GAME_SETTINGS.tabu_limit : 999,
     turn_correct_count: 0,
     turn_pass_count: 0,
     turn_tabu_count: 0,
@@ -83,6 +84,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         current_card: firstCard,
         time_remaining: settings.turn_duration,
         remaining_passes: settings.pass_limit,
+        remaining_tabus: settings.tabu_limit > 0 ? settings.tabu_limit : 999,
         turn_correct_count: 0,
         turn_pass_count: 0,
         turn_tabu_count: 0,
@@ -104,6 +106,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         current_card: nextCard,
         time_remaining: settings.turn_duration,
         remaining_passes: settings.pass_limit,
+        remaining_tabus: settings.tabu_limit > 0 ? settings.tabu_limit : 999,
         turn_correct_count: 0,
         turn_pass_count: 0,
         turn_tabu_count: 0,
@@ -149,7 +152,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
   recordPass: () => {
     const { gameState, cardPool } = get();
-    if (gameState.status !== 'in_progress' || gameState.remaining_passes <= 0) return;
+    if (gameState.status !== 'in_progress' || (gameState.remaining_passes <= 0 && gameState.remaining_passes < 99)) return;
 
     soundManager.playPass();
     triggerHaptic('pass');
@@ -167,7 +170,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     set({
       gameState: {
         ...gameState,
-        remaining_passes: gameState.remaining_passes - 1,
+        remaining_passes: gameState.remaining_passes >= 99 ? gameState.remaining_passes : gameState.remaining_passes - 1,
         turn_pass_count: gameState.turn_pass_count + 1,
         current_card: nextCard,
         cards_used_ids: [...gameState.cards_used_ids, nextCard.id],
@@ -179,6 +182,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   recordBuzzer: (rivalPlayerName, rivalTeamId) => {
     const { gameState, teams, cardPool, settings } = get();
     if (gameState.status !== 'in_progress') return;
+    if (settings.tabu_limit > 0 && gameState.remaining_tabus <= 0) return;
 
     soundManager.playBuzzer();
     triggerHaptic('buzzer');
@@ -204,6 +208,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       teams: updatedTeams,
       gameState: {
         ...gameState,
+        remaining_tabus: settings.tabu_limit > 0 ? gameState.remaining_tabus - 1 : gameState.remaining_tabus,
         turn_tabu_count: gameState.turn_tabu_count + 1,
         current_card: nextCard,
         cards_used_ids: [...gameState.cards_used_ids, nextCard.id],
@@ -268,6 +273,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
           active_team_id: teams[nextIndex].id,
           time_remaining: settings.turn_duration,
           remaining_passes: settings.pass_limit,
+          remaining_tabus: settings.tabu_limit > 0 ? settings.tabu_limit : 999,
           turn_correct_count: 0,
           turn_pass_count: 0,
           turn_tabu_count: 0,
@@ -286,6 +292,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         active_team_id: teams[nextIndex].id,
         time_remaining: settings.turn_duration,
         remaining_passes: settings.pass_limit,
+        remaining_tabus: settings.tabu_limit > 0 ? settings.tabu_limit : 999,
         turn_correct_count: 0,
         turn_pass_count: 0,
         turn_tabu_count: 0,

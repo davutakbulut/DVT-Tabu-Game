@@ -9,9 +9,13 @@ interface GameControlsProps {
   onPass: () => void;
   onBuzzer: () => void;
   remainingPasses: number;
+  remainingTabus?: number;
+  tabuLimit?: number;
   correctCount?: number;
   passCount?: number;
   tabuCount?: number;
+  penaltyPoints?: number;
+  correctPoints?: number;
   isPresenter?: boolean;
   isRival?: boolean;
 }
@@ -21,9 +25,13 @@ export const GameControls: React.FC<GameControlsProps> = ({
   onPass,
   onBuzzer,
   remainingPasses,
+  remainingTabus = 999,
+  tabuLimit = 0,
   correctCount = 0,
   passCount = 0,
   tabuCount = 0,
+  penaltyPoints = -1,
+  correctPoints = 1,
   isPresenter = true,
   isRival = false,
 }) => {
@@ -39,11 +47,14 @@ export const GameControls: React.FC<GameControlsProps> = ({
           <span className="text-2xl font-black uppercase tracking-wider">BUZZER!</span>
         </button>
         <span className="text-xs text-slate-400 mt-4 text-center">
-          Anlatıcı yasaklı kelime kullanırsa hemen bas! (-1 Ceza)
+          Anlatıcı yasaklı kelime kullanırsa hemen bas! ({penaltyPoints} Ceza)
         </span>
       </div>
     );
   }
+
+  const isPassDisabled = remainingPasses <= 0 && remainingPasses < 99;
+  const isTabuDisabled = tabuLimit > 0 && remainingTabus <= 0;
 
   return (
     <div className="w-full max-w-sm mx-auto flex flex-col gap-2 p-1">
@@ -59,12 +70,14 @@ export const GameControls: React.FC<GameControlsProps> = ({
             size="lg"
             fullWidth
             onClick={onPass}
-            disabled={remainingPasses <= 0}
+            disabled={isPassDisabled}
             className="flex flex-col items-center justify-center py-3.5 px-1 relative shadow-amber-500/20"
           >
             <FastForward className="w-6 h-6 mb-0.5" />
             <span className="text-xs uppercase font-extrabold">Pas</span>
-            <span className="text-[10px] opacity-80">({remainingPasses} Hak)</span>
+            <span className="text-[10px] opacity-80">
+              {remainingPasses >= 99 ? '(Sınırsız)' : `(${remainingPasses} Hak)`}
+            </span>
           </Button>
         </div>
 
@@ -78,11 +91,20 @@ export const GameControls: React.FC<GameControlsProps> = ({
             size="lg"
             fullWidth
             onClick={onBuzzer}
+            disabled={isTabuDisabled}
             className="flex flex-col items-center justify-center py-3.5 px-1 shadow-red-500/25"
           >
             <AlertOctagon className="w-6 h-6 mb-0.5" />
             <span className="text-xs uppercase font-extrabold">Tabu</span>
-            <span className="text-[10px] opacity-80">(-1 Puan)</span>
+            <span className="text-[10px] opacity-80">
+              {tabuLimit > 0
+                ? isTabuDisabled
+                  ? '(Limit Doldu)'
+                  : `(${remainingTabus} Hak)`
+                : penaltyPoints === 0
+                ? '(0 Puan)'
+                : `(${penaltyPoints} Puan)`}
+            </span>
           </Button>
         </div>
 
@@ -100,7 +122,7 @@ export const GameControls: React.FC<GameControlsProps> = ({
           >
             <Check className="w-6 h-6 mb-0.5 stroke-[3]" />
             <span className="text-xs uppercase font-extrabold">Doğru</span>
-            <span className="text-[10px] opacity-80">(+1 Puan)</span>
+            <span className="text-[10px] opacity-80">(+{correctPoints} Puan)</span>
           </Button>
         </div>
       </div>

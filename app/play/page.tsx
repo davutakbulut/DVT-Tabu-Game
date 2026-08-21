@@ -170,7 +170,7 @@ export default function PlayPage() {
             <div className="w-full grid grid-cols-3 gap-2 py-3 px-2 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
               <div className="flex flex-col items-center">
                 <span className="text-emerald-400 font-black text-lg">{gameState.turn_correct_count}</span>
-                <span className="text-slate-400 text-[10px]">Doğru (+{gameState.turn_correct_count})</span>
+                <span className="text-slate-400 text-[10px]">Doğru (+{gameState.turn_correct_count * settings.correct_points})</span>
               </div>
               <div className="flex flex-col items-center border-x border-slate-800">
                 <span className="text-amber-400 font-black text-lg">{gameState.turn_pass_count}</span>
@@ -207,9 +207,13 @@ export default function PlayPage() {
             onPass={recordPass}
             onBuzzer={() => recordBuzzer()}
             remainingPasses={gameState.remaining_passes}
+            remainingTabus={gameState.remaining_tabus}
+            tabuLimit={settings.tabu_limit}
             correctCount={gameState.turn_correct_count}
             passCount={gameState.turn_pass_count}
             tabuCount={gameState.turn_tabu_count}
+            penaltyPoints={settings.buzzer_penalty}
+            correctPoints={settings.correct_points}
           />
         ) : (
           <div className="h-14 flex items-center justify-center text-xs text-slate-500">

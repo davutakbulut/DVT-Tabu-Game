@@ -44,10 +44,11 @@ export interface Player {
 export interface GameSettings {
   team_count: number;
   turn_duration: number; // 30 - 120s
-  total_rounds: number; // e.g. 6 rounds (each team plays 3 times)
-  pass_limit: number; // 0 - 5 passes per turn
+  total_rounds: number; // e.g. 6 rounds
+  pass_limit: number; // 0 - 10, or 999 for unlimited
+  tabu_limit: number; // 0 for unlimited, or 1, 2, 3, 5 max tabus per turn
   buzzer_penalty: number; // -1, -2, 0
-  correct_points: number; // 1
+  correct_points: number; // 1, 2
   target_score?: number | null;
   categories: (Category | string)[];
   difficulty: Difficulty | 'Tümü';
@@ -56,11 +57,11 @@ export interface GameSettings {
 
 export interface Room {
   id: string;
-  code: string; // 6 chars, e.g. 'TABU88'
+  code: string;
   title: string;
   host_id?: string;
   is_private: boolean;
-  password_hash?: string | null; // 4-digit PIN
+  password_hash?: string | null;
   settings: GameSettings;
   status: 'waiting' | 'playing' | 'paused' | 'finished' | 'closed';
   current_game_id?: string | null;
@@ -89,6 +90,7 @@ export interface ActiveGameState {
   current_card: Card | null;
   time_remaining: number;
   remaining_passes: number;
+  remaining_tabus: number;
   turn_correct_count: number;
   turn_pass_count: number;
   turn_tabu_count: number;
