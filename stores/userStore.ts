@@ -112,6 +112,35 @@ export const useUserStore = create<UserStoreState>((set, get) => {
       if (!isClient) return;
 
       try {
+        // 1. Check if there is an active Supabase Auth session (e.g. after Google OAuth redirect)
+        if (isSupabaseConfigured()) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            const u = session.user;
+            const email = u.email || state.userEmail;
+            const name = u.user_metadata?.full_name || u.user_metadata?.display_name || (email ? email.split('@')[0] : state.guestName);
+            const avatar = u.user_metadata?.avatar_url || state.userAvatar;
+            const provider = (u.app_metadata?.provider as any) || 'google';
+
+            set({
+              userId: u.id,
+              userEmail: email,
+              guestName: name,
+              userAvatar: avatar,
+              provider,
+              isLoggedIn: true,
+            });
+
+            localStorage.setItem('dvt_user_id', u.id);
+            localStorage.setItem('dvt_display_name', name);
+            localStorage.setItem('dvt_user_provider', provider);
+            localStorage.setItem('dvt_is_logged_in', 'true');
+            if (email) localStorage.setItem('dvt_user_email', email);
+            if (avatar) localStorage.setItem('dvt_user_avatar', avatar);
+          }
+        }
+
+        // 2. Fetch profile from DB
         const res = await fetch(`/api/user/profile?userId=${encodeURIComponent(state.userId)}`);
         if (res.ok) {
           const json = await res.json();
