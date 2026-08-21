@@ -53,9 +53,14 @@ import {
 
 export default function AdminPortalPage() {
   const router = useRouter();
-  const { isAuthenticated, login, logout } = useAdminStore();
+  const { isAuthenticated, login, logout, updatePin, getCurrentPin } = useAdminStore();
   const { currentVersion, updateInfo, checkNow } = useVersion();
   const { setOnboardingCompleted } = useUserStore();
+
+  // PIN Change State
+  const [isChangePinOpen, setIsChangePinOpen] = useState(false);
+  const [newPinValue, setNewPinValue] = useState('');
+  const [pinChangeSuccess, setPinChangeSuccess] = useState(false);
 
   // Auth Form State
   const [pinInput, setPinInput] = useState('');
@@ -522,6 +527,17 @@ export default function AdminPortalPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setNewPinValue('');
+              setPinChangeSuccess(false);
+              setIsChangePinOpen(true);
+            }}
+            className="text-xs font-bold text-amber-300 hover:text-white bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 py-2 px-3 rounded-xl flex items-center gap-1.5 transition-colors"
+            title="Yönetici PIN Kodunu Değiştir"
+          >
+            <KeyRound className="w-3.5 h-3.5" /> PIN Değiştir
+          </button>
           <button
             onClick={() => router.push('/')}
             className="text-xs font-bold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 py-2 px-3 rounded-xl flex items-center gap-1.5"
@@ -1476,6 +1492,76 @@ export default function AdminPortalPage() {
                 Değişiklikleri Kaydet
               </Button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change PIN Modal */}
+      {isChangePinOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-3xl bg-slate-900 border border-amber-500/40 p-6 flex flex-col gap-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-white">Yönetici PIN Kodunu Değiştir</h4>
+                  <span className="text-[10px] text-slate-400">Yeni bir güvenlik PIN kodu belirleyin</span>
+                </div>
+              </div>
+              <button onClick={() => setIsChangePinOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {pinChangeSuccess ? (
+              <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>Yönetici PIN kodunuz başarıyla güncellendi!</span>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (newPinValue.trim().length >= 4) {
+                    updatePin(newPinValue.trim());
+                    setPinChangeSuccess(true);
+                    setTimeout(() => {
+                      setIsChangePinOpen(false);
+                      setPinChangeSuccess(false);
+                    }, 1800);
+                  } else {
+                    alert('Lütfen en az 4 karakterli bir PIN kodu girin.');
+                  }
+                }}
+                className="flex flex-col gap-3"
+              >
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">Mevcut Aktif PIN:</label>
+                  <div className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5 text-xs font-mono text-slate-400">
+                    {getCurrentPin()}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">Yeni PIN Kodu (En az 4 hane):</label>
+                  <input
+                    type="password"
+                    value={newPinValue}
+                    onChange={(e) => setNewPinValue(e.target.value)}
+                    placeholder="Örn: 98765 veya gizlisifre"
+                    className="w-full bg-slate-950 border border-amber-500/40 rounded-xl p-2.5 text-xs font-mono font-bold text-white focus:outline-none focus:border-amber-400"
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <Button variant="primary" size="md" type="submit" className="text-xs py-3 font-black bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 mt-1">
+                  Yeni PIN'i Kaydet & Aktif Et
+                </Button>
+              </form>
+            )}
           </div>
         </div>
       )}
