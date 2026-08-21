@@ -188,7 +188,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             email,
             password,
           });
-          if (error) throw error;
+          if (error) {
+            if (error.message?.includes('Invalid login credentials')) {
+              throw new Error('E-posta adresi veya şifre hatalı. Henüz hesabınız yoksa lütfen aşağıdaki "Kayıt ol" seçeneğine tıklayın.');
+            } else if (error.message?.includes('Email not confirmed')) {
+              throw new Error('E-posta adresiniz henüz doğrulanmamış. Lütfen gelen kutunuzu kontrol edin veya yeni bir hesap oluşturun.');
+            } else if (error.message?.includes('User already registered')) {
+              throw new Error('Bu e-posta adresi zaten kayıtlı. Lütfen şifrenizle giriş yapın.');
+            }
+            throw error;
+          }
 
           const name = data.user?.user_metadata?.display_name || email.split('@')[0];
           await loginWithSocial('google', email, name);
@@ -211,7 +220,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         }, 800);
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Giriş işlemi sırasında bir hata oluştu.');
+      const msg = err.message || 'İşlem sırasında bir hata oluştu.';
+      if (msg.includes('Invalid login credentials')) {
+        setErrorMessage('E-posta veya şifre hatalı. Eğer henüz hesap açmadıysanız aşağıdaki "Kayıt ol" linkine tıklayınız.');
+      } else {
+        setErrorMessage(msg);
+      }
       soundManager.play('tabu');
     } finally {
       setLoading(false);
