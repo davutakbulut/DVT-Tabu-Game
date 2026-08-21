@@ -19,8 +19,10 @@ import {
   ShieldCheck,
   Zap,
   Globe,
-  Check
+  Check,
+  History
 } from 'lucide-react';
+import { GameHistoryModal } from '@/components/profile/GameHistoryModal';
 
 interface ProfileDrawerProps {
   isOpen: boolean;
@@ -53,6 +55,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
 
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -235,6 +238,16 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
                 <span className="text-[9px] text-slate-400">Hak</span>
               </div>
             </div>
+
+            {/* Detaylı Maç Geçmişi Butonu */}
+            <button
+              type="button"
+              onClick={() => setIsHistoryOpen(true)}
+              className="w-full py-2.5 px-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-xs font-black flex items-center justify-center gap-2 transition-all shadow-sm"
+            >
+              <History className="w-4 h-4 text-indigo-400" />
+              <span>Tüm Maç Geçmişini İncele ({stats.totalGamesPlayed})</span>
+            </button>
           </div>
 
           {/* Active Settings Snapshot */}
@@ -331,6 +344,12 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
           )}
         </div>
       </motion.div>
+
+      {/* Game History Modal */}
+      <GameHistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+      />
     </div>
   );
 };
