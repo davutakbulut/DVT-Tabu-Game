@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { PaywallModal } from '@/components/monetization/PaywallModal';
 import { UpdateModal } from '@/components/version/UpdateModal';
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
+import { InterstitialAdModal } from '@/components/ads/InterstitialAdModal';
 import { 
   ShieldCheck, 
   Lock, 
@@ -58,10 +59,14 @@ import {
   Terminal,
   Server,
   Monitor,
-  Volume2
+  Volume2,
+  Megaphone,
+  ExternalLink,
+  Tv
 } from 'lucide-react';
 import { sendLog } from '@/lib/logger';
 import { DEFAULT_ONBOARDING_STEPS, OnboardingStepItem } from '@/types/onboarding';
+import { AdConfig, AdItem, DEFAULT_AD_CONFIG, DEFAULT_ADS } from '@/types/ads';
 
 export default function AdminPortalPage() {
   const router = useRouter();
@@ -78,8 +83,8 @@ export default function AdminPortalPage() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
 
-  // Active Tab: 'cards' | 'monetization' | 'analytics' | 'logs' | 'versions' | 'onboarding'
-  const [activeTab, setActiveTab] = useState<'cards' | 'monetization' | 'analytics' | 'logs' | 'versions' | 'onboarding'>('cards');
+  // Active Tab: 'cards' | 'monetization' | 'ads' | 'analytics' | 'logs' | 'versions' | 'onboarding'
+  const [activeTab, setActiveTab] = useState<'cards' | 'monetization' | 'ads' | 'analytics' | 'logs' | 'versions' | 'onboarding'>('cards');
 
   // Analytics Data
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -161,6 +166,15 @@ export default function AdminPortalPage() {
   const [editingOnboardingStep, setEditingOnboardingStep] = useState<OnboardingStepItem | null>(null);
   const [savingOnboarding, setSavingOnboarding] = useState(false);
   const [onboardingSavedSuccess, setOnboardingSavedSuccess] = useState(false);
+
+  // Ad Engine & Inventory State
+  const [adConfig, setAdConfig] = useState<AdConfig>(DEFAULT_AD_CONFIG);
+  const [adsList, setAdsList] = useState<AdItem[]>(DEFAULT_ADS);
+  const [editingAd, setEditingAd] = useState<AdItem | null>(null);
+  const [isNewAdModalOpen, setIsNewAdModalOpen] = useState(false);
+  const [isTestAdModalOpen, setIsTestAdModalOpen] = useState(false);
+  const [savingAdConfig, setSavingAdConfig] = useState(false);
+  const [adConfigSavedSuccess, setAdConfigSavedSuccess] = useState(false);
 
   const fetchMetrics = () => {
     setLoadingMetrics(true);
@@ -342,6 +356,57 @@ export default function AdminPortalPage() {
     }
   };
 
+  const fetchAdsData = () => {
+    fetch('/api/ads')
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.config) setAdConfig(res.config);
+        if (res.ads && res.ads.length > 0) setAdsList(res.ads);
+      })
+      .catch(() => {});
+  };
+
+  const handleSaveAdConfig = async () => {
+    setSavingAdConfig(true);
+    try {
+      const res = await fetch('/api/ads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: adConfig }),
+      });
+      if (res.ok) {
+        setAdConfigSavedSuccess(true);
+        setTimeout(() => setAdConfigSavedSuccess(false), 3000);
+      }
+    } catch {
+      alert('Reklam ayarları kaydedilemedi.');
+    } finally {
+      setSavingAdConfig(false);
+    }
+  };
+
+  const handleSaveAdsList = async (updatedList: AdItem[]) => {
+    setAdsList(updatedList);
+    try {
+      await fetch('/api/ads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ads: updatedList }),
+      });
+    } catch {}
+  };
+
+  const handleToggleAdStatus = (adId: string, currentStatus: boolean) => {
+    const updated = adsList.map((a) => (a.id === adId ? { ...a, is_active: !currentStatus } : a));
+    handleSaveAdsList(updated);
+  };
+
+  const handleDeleteAd = (adId: string) => {
+    if (!confirm('Bu reklamı silmek istediğinize emin misiniz?')) return;
+    const updated = adsList.filter((a) => a.id !== adId);
+    handleSaveAdsList(updated);
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchMetrics();
@@ -351,6 +416,7 @@ export default function AdminPortalPage() {
       fetchLogs();
       fetchLogsStats();
       fetchOnboardingSteps();
+      fetchAdsData();
     }
   }, [isAuthenticated]);
 
@@ -765,6 +831,7 @@ export default function AdminPortalPage() {
           { id: 'cards', label: 'Kart & Deste Havuzu (CMS)', icon: <Layers className="w-4 h-4" /> },
           { id: 'logs', label: 'Hata & Log Merkezi', icon: <Bug className="w-4 h-4" />, badge: logStatsSummary.unresolved > 0 ? logStatsSummary.unresolved : null },
           { id: 'monetization', label: 'Monetizasyon & Paywall', icon: <Crown className="w-4 h-4" /> },
+          { id: 'ads', label: 'Reklam & Ad Engine', icon: <Megaphone className="w-4 h-4" /> },
           { id: 'analytics', label: 'Analitik & Drop-off', icon: <BarChart3 className="w-4 h-4" /> },
           { id: 'versions', label: 'Sürüm & Dağıtım', icon: <ArrowUpCircle className="w-4 h-4" /> },
           { id: 'onboarding', label: 'Onboarding Akışı', icon: <Compass className="w-4 h-4" /> },
@@ -1583,6 +1650,307 @@ export default function AdminPortalPage() {
         </div>
       )}
 
+      {/* TAB: ADS & AD ENGINE STUDIO */}
+      {activeTab === 'ads' && (
+        <div className="flex flex-col gap-5">
+          {/* Section 1: Ad Engine Configuration & Rules */}
+          <div className="p-5 rounded-3xl bg-gradient-to-b from-indigo-950/30 via-slate-900 to-slate-900 border border-indigo-500/40 flex flex-col gap-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-black text-indigo-300 uppercase tracking-wider flex items-center gap-2">
+                  <Megaphone className="w-4 h-4 text-indigo-400" /> Reklam Motoru & Gösterim Kuralları
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Oyun aralarında, tur sonlarında ve maç özetinde çıkacak reklamların sıklığını, süresini ve Pro ayrıcalıklarını belirleyin.
+                </p>
+              </div>
+
+              {adConfigSavedSuccess && (
+                <div className="p-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black flex items-center gap-1.5 animate-pulse shrink-0">
+                  <Check className="w-4 h-4" /> Reklam Ayarları Canlıda!
+                </div>
+              )}
+            </div>
+
+            {/* Master Switch & Pro Ad Free */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <label className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-black text-white block">📢 Reklam Gösterimi (Master Switch)</span>
+                  <span className="text-[10px] text-slate-400">Tüm sistem genelinde reklamları aç / kapat</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={adConfig.ads_enabled}
+                  onChange={(e) => setAdConfig({ ...adConfig, ads_enabled: e.target.checked })}
+                  className="rounded accent-indigo-500 w-5 h-5 cursor-pointer"
+                />
+              </label>
+
+              <label className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-black text-white block">👑 Pro Üyelere Reklamsız Deneyim</span>
+                  <span className="text-[10px] text-slate-400">Pro kullanıcılara hiçbir reklam gösterme</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={adConfig.pro_users_ad_free}
+                  onChange={(e) => setAdConfig({ ...adConfig, pro_users_ad_free: e.target.checked })}
+                  className="rounded accent-amber-500 w-5 h-5 cursor-pointer"
+                />
+              </label>
+            </div>
+
+            {/* Frequency (Interval Turns) */}
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-2">
+                🎯 Tur Sıklığı (Kaç turda bir reklam gösterilsin?):
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[1, 2, 3, 5].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setAdConfig({ ...adConfig, interval_turns: num })}
+                    className={`py-3 rounded-2xl text-xs font-black border transition-all ${
+                      adConfig.interval_turns === num
+                        ? 'bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-500/20'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    {num === 1 ? 'Her Turda' : `Her ${num} Turda Bir`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Skip Delay Countdown */}
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-2">
+                ⏱️ Reklam Atlama Süresi (Geri sayım kaç saniye sürsün?):
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { delay: 0, label: '0 sn (Hemen Geçilebilir)' },
+                  { delay: 3, label: '3 sn Geri Sayım' },
+                  { delay: 5, label: '5 sn Geri Sayım' },
+                ].map((item) => (
+                  <button
+                    key={item.delay}
+                    type="button"
+                    onClick={() => setAdConfig({ ...adConfig, skip_delay_seconds: item.delay })}
+                    className={`py-3 rounded-2xl text-xs font-black border transition-all ${
+                      adConfig.skip_delay_seconds === item.delay
+                        ? 'bg-purple-600 border-purple-400 text-white shadow-md shadow-purple-500/20'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Triggers Checkboxes */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <label className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-bold text-white block">Tur Sonlarında Göster</span>
+                  <span className="text-[10px] text-slate-400">Tur aralarında süre bittiğinde reklam tetikle</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={adConfig.on_round_end}
+                  onChange={(e) => setAdConfig({ ...adConfig, on_round_end: e.target.checked })}
+                  className="rounded accent-indigo-500 w-5 h-5 cursor-pointer"
+                />
+              </label>
+
+              <label className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-bold text-white block">Maç Sonunda Göster</span>
+                  <span className="text-[10px] text-slate-400">Oyun bittiğinde özet ekranından önce reklam tetikle</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={adConfig.on_match_end}
+                  onChange={(e) => setAdConfig({ ...adConfig, on_match_end: e.target.checked })}
+                  className="rounded accent-indigo-500 w-5 h-5 cursor-pointer"
+                />
+              </label>
+            </div>
+
+            {/* Save & Test Buttons */}
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleSaveAdConfig}
+                disabled={savingAdConfig}
+                className="flex-1 py-3.5 font-black text-sm bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:opacity-95 shadow-lg shadow-indigo-500/25"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {savingAdConfig ? 'Kaydediliyor...' : '💾 Reklam Ayarlarını Kaydet & Canlıya Al'}
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => setIsTestAdModalOpen(true)}
+                className="text-xs py-3.5 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10 font-bold"
+              >
+                <Tv className="w-4 h-4 mr-1.5" /> Canlı Reklamı Test Et
+              </Button>
+            </div>
+          </div>
+
+          {/* Section 2: Ad Inventory & Creatives Management (CRUD) */}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <Tv className="w-4 h-4 text-purple-400" /> Reklam Envanteri & İçerikler ({adsList.length} Reklam)
+                </h3>
+                <span className="text-[10px] text-slate-400">
+                  Yayındaki sponsorlukları, Pro bannerlarını ve reklam içeriklerini yönetin
+                </span>
+              </div>
+
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  const newAd: AdItem = {
+                    id: `ad-${Date.now()}`,
+                    title: 'Yeni Sponsor / Özel Fırsat',
+                    description: 'Reklam açıklamasını buraya girin...',
+                    badge: 'SPONSORLU',
+                    image_url: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&auto=format&fit=crop&q=80',
+                    cta_text: 'Hemen İncele ➔',
+                    target_url: 'https://portegu.com',
+                    placement: 'all',
+                    color_theme: 'from-indigo-600 to-purple-800',
+                    is_active: true,
+                    impressions: 0,
+                    clicks: 0,
+                    created_at: new Date().toISOString(),
+                  };
+                  setEditingAd(newAd);
+                }}
+                className="text-xs font-bold py-2 px-3 bg-indigo-600 hover:bg-indigo-500"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Yeni Reklam Ekle
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {adsList.map((ad) => {
+                const ctr = ad.impressions > 0 ? Math.round((ad.clicks / ad.impressions) * 100) : 0;
+
+                return (
+                  <div
+                    key={ad.id}
+                    className={`rounded-3xl border transition-all p-4 flex flex-col justify-between gap-3 shadow-xl ${
+                      ad.is_active
+                        ? 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                        : 'bg-slate-950/60 border-slate-900 opacity-60'
+                    }`}
+                  >
+                    {/* Ad Creative Top Preview */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {ad.image_url ? (
+                          <img
+                            src={ad.image_url}
+                            alt={ad.title}
+                            className="w-12 h-12 rounded-2xl object-cover border border-slate-800 shrink-0"
+                          />
+                        ) : (
+                          <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${ad.color_theme || 'from-indigo-500 to-purple-600'} flex items-center justify-center text-white shrink-0`}>
+                            <Megaphone className="w-5 h-5" />
+                          </div>
+                        )}
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                              {ad.badge || 'REKLAM'}
+                            </span>
+                            <span className="text-[9px] text-slate-400 font-mono">
+                              {ad.placement}
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-black text-white truncate mt-1">{ad.title}</h4>
+                        </div>
+                      </div>
+
+                      {/* Status Toggle */}
+                      <button
+                        onClick={() => handleToggleAdStatus(ad.id, ad.is_active)}
+                        className={`text-[10px] font-black px-2.5 py-1 rounded-xl border transition-all flex items-center gap-1 shrink-0 ${
+                          ad.is_active
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}
+                      >
+                        {ad.is_active ? <Check className="w-3 h-3" /> : null}
+                        {ad.is_active ? 'Yayında' : 'Pasif'}
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-slate-300 line-clamp-2 leading-relaxed">
+                      {ad.description}
+                    </p>
+
+                    {/* Stats & Metrics */}
+                    <div className="grid grid-cols-3 gap-1.5 p-2 rounded-2xl bg-slate-950/70 border border-slate-800 text-center font-mono">
+                      <div>
+                        <span className="text-[9px] text-slate-500 block">Gösterim</span>
+                        <span className="text-xs font-bold text-white">{ad.impressions || 0}</span>
+                      </div>
+                      <div className="border-x border-slate-800">
+                        <span className="text-[9px] text-slate-500 block">Tıklama</span>
+                        <span className="text-xs font-bold text-emerald-400">{ad.clicks || 0}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-500 block">CTR</span>
+                        <span className="text-xs font-bold text-amber-400">%{ctr}</span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px]">
+                      <span className="text-slate-500 font-mono truncate max-w-[150px]">
+                        {ad.target_url}
+                      </span>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingAd(ad)}
+                          className="text-[10px] py-1 px-2.5 bg-slate-950 border-slate-800 text-indigo-300 font-bold"
+                        >
+                          <Edit3 className="w-3 h-3 mr-1" /> Düzenle
+                        </Button>
+
+                        <button
+                          onClick={() => handleDeleteAd(ad.id)}
+                          className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg transition-colors"
+                          title="Reklamı Sil"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TAB: ANALYTICS */}
       {activeTab === 'analytics' && (
         <div className="flex flex-col gap-4">
@@ -2382,10 +2750,155 @@ export default function AdminPortalPage() {
         </div>
       )}
 
+      {/* Edit Ad Modal */}
+      {editingAd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-indigo-500/40 p-6 flex flex-col gap-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">
+                  <Megaphone className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-white">Reklam İçeriğini Düzenle</h4>
+                  <span className="text-[10px] text-slate-400">ID: {editingAd.id}</span>
+                </div>
+              </div>
+              <button onClick={() => setEditingAd(null)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const exists = adsList.some((a) => a.id === editingAd.id);
+                const updated = exists
+                  ? adsList.map((a) => (a.id === editingAd.id ? editingAd : a))
+                  : [editingAd, ...adsList];
+                handleSaveAdsList(updated);
+                setEditingAd(null);
+              }}
+              className="flex flex-col gap-3.5"
+            >
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">Rozet Metni (Badge):</label>
+                  <input
+                    type="text"
+                    value={editingAd.badge || ''}
+                    onChange={(e) => setEditingAd({ ...editingAd, badge: e.target.value })}
+                    placeholder="Örn: SPONSORLU, ÖZEL FIRSAT"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">Gösterim Konumu (Placement):</label>
+                  <select
+                    value={editingAd.placement}
+                    onChange={(e) => setEditingAd({ ...editingAd, placement: e.target.value as any })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="all">🌟 Tüm Konumlar (Her Yerde)</option>
+                    <option value="turn_break">⏱️ Tur Aralarında (Turn Break)</option>
+                    <option value="round_end">🏆 Tur Sonlarında (Round End)</option>
+                    <option value="match_end">🏁 Maç Sonunda (Match Summary)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Reklam Başlığı:</label>
+                <input
+                  type="text"
+                  value={editingAd.title}
+                  onChange={(e) => setEditingAd({ ...editingAd, title: e.target.value })}
+                  placeholder="Örn: ☕ Parti Molasında Kahve Keyfi"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-black text-white focus:outline-none focus:border-indigo-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Reklam Açıklaması:</label>
+                <textarea
+                  rows={2}
+                  value={editingAd.description}
+                  onChange={(e) => setEditingAd({ ...editingAd, description: e.target.value })}
+                  placeholder="Reklam metnini buraya yazın..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Banner Görsel URL'i:</label>
+                <input
+                  type="url"
+                  value={editingAd.image_url || ''}
+                  onChange={(e) => setEditingAd({ ...editingAd, image_url: e.target.value })}
+                  placeholder="https://images.unsplash.com/photo-..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">Buton Metni (CTA):</label>
+                  <input
+                    type="text"
+                    value={editingAd.cta_text}
+                    onChange={(e) => setEditingAd({ ...editingAd, cta_text: e.target.value })}
+                    placeholder="Hemen İncele ➔"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">Hedef Link (URL veya /paywall):</label>
+                  <input
+                    type="text"
+                    value={editingAd.target_url}
+                    onChange={(e) => setEditingAd({ ...editingAd, target_url: e.target.value })}
+                    placeholder="https://portegu.com veya /paywall"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <Button
+                  variant="outline"
+                  size="md"
+                  type="button"
+                  onClick={() => setEditingAd(null)}
+                  className="text-xs"
+                >
+                  İptal
+                </Button>
+                <Button
+                  variant="primary"
+                  size="md"
+                  type="submit"
+                  className="text-xs font-black bg-indigo-600 hover:bg-indigo-500"
+                >
+                  <Check className="w-3.5 h-3.5 mr-1" /> Reklamı Kaydet & Yayınla
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Modals */}
       <PaywallModal isOpen={isTestPaywallOpen} onClose={() => setIsTestPaywallOpen(false)} triggerSource="admin_preview" />
       {testUpdateModal && <UpdateModal isOpen={Boolean(testUpdateModal)} onClose={() => setTestUpdateModal(null)} updateInfo={testUpdateModal} />}
       <OnboardingModal isOpen={isTestOnboardingOpen} onClose={() => setIsTestOnboardingOpen(false)} />
+      <InterstitialAdModal isOpen={isTestAdModalOpen} onClose={() => setIsTestAdModalOpen(false)} placement="all" />
     </div>
   );
 }

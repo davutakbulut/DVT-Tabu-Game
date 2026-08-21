@@ -80,6 +80,10 @@ export const analytics = {
     trackEvent('paywall_view', { triggerSource, gamesPlayed }),
   paywallCtaClick: (planId: string, triggerSource?: string) => 
     trackEvent('paywall_cta_click', { planId, triggerSource }),
+  adImpression: (adId: string, placement: string) =>
+    trackEvent('ad_impression', { adId, placement }),
+  adClick: (adId: string, placement: string) =>
+    trackEvent('ad_click', { adId, placement }),
   clientError: (errorMessage: string, componentStack?: string) => 
     trackEvent('client_error', { errorMessage, componentStack }),
 };

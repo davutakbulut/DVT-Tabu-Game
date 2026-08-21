@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '@/stores/gameStore';
+import { useUserStore } from '@/stores/userStore';
 import { useTimer } from '@/hooks/useTimer';
 import { useWakeLock } from '@/hooks/useWakeLock';
 import { CardDisplay } from '@/components/game/CardDisplay';
@@ -10,11 +11,14 @@ import { GameControls } from '@/components/game/GameControls';
 import { ScoreBoard } from '@/components/game/ScoreBoard';
 import { Timer } from '@/components/game/Timer';
 import { Button } from '@/components/ui/Button';
+import { InterstitialAdModal } from '@/components/ads/InterstitialAdModal';
 import { Play, Pause, RotateCcw, AlertTriangle, ArrowRight, Trophy, CheckCircle2, FastForward, AlertOctagon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AdConfig, DEFAULT_AD_CONFIG } from '@/types/ads';
 
 export default function PlayPage() {
   const router = useRouter();
+  const { isProUser } = useUserStore();
   const {
     gameState,
     teams,
@@ -30,6 +34,19 @@ export default function PlayPage() {
   } = useGameStore();
 
   const [isPaused, setIsPaused] = useState(false);
+  const [adConfig, setAdConfig] = useState<AdConfig>(DEFAULT_AD_CONFIG);
+  const [turnsPlayed, setTurnsPlayed] = useState(0);
+  const [isAdModalOpen, setIsAdModalOpen] = useState(false);
+
+  // Fetch live ad config
+  useEffect(() => {
+    fetch('/api/ads')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.config) setAdConfig(json.config);
+      })
+      .catch(() => {});
+  }, []);
 
   // Active turn timer
   const { timeRemaining, resetTimer } = useTimer({
@@ -51,6 +68,24 @@ export default function PlayPage() {
   }, [gameState.status, router]);
 
   const activeTeam = teams[gameState.active_team_index] || teams[0];
+
+  const handleNextTeam = () => {
+    const nextTurn = turnsPlayed + 1;
+    setTurnsPlayed(nextTurn);
+
+    const isAdFree = isProUser && adConfig.pro_users_ad_free;
+    const shouldTriggerAd =
+      adConfig.ads_enabled &&
+      !isAdFree &&
+      adConfig.interval_turns > 0 &&
+      nextTurn % adConfig.interval_turns === 0;
+
+    if (shouldTriggerAd) {
+      setIsAdModalOpen(true);
+    } else {
+      endTurnAndNext();
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col justify-between p-3 sm:p-4 max-w-lg mx-auto w-full select-none">
@@ -191,7 +226,7 @@ export default function PlayPage() {
               variant="primary"
               size="lg"
               fullWidth
-              onClick={endTurnAndNext}
+              onClick={handleNextTeam}
             >
               Sonraki Takıma Geç <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
@@ -221,6 +256,14 @@ export default function PlayPage() {
           </div>
         )}
       </footer>
+
+      {/* Interstitial Ad Modal */}
+      <InterstitialAdModal
+        isOpen={isAdModalOpen}
+        onClose={() => setIsAdModalOpen(false)}
+        onAdFinished={() => endTurnAndNext()}
+        placement="turn_break"
+      />
 
       {/* Pause Modal */}
       <AnimatePresence>
