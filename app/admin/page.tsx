@@ -84,8 +84,8 @@ export default function AdminPortalPage() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
 
-  // Active Tab: 'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'logs' | 'versions' | 'onboarding'
-  const [activeTab, setActiveTab] = useState<'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'logs' | 'versions' | 'onboarding'>('cards');
+  // Active Tab: 'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'online_rooms' | 'logs' | 'versions' | 'onboarding'
+  const [activeTab, setActiveTab] = useState<'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'online_rooms' | 'logs' | 'versions' | 'onboarding'>('cards');
 
   // Analytics Data
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -177,18 +177,57 @@ export default function AdminPortalPage() {
   const [savingAdConfig, setSavingAdConfig] = useState(false);
   const [adConfigSavedSuccess, setAdConfigSavedSuccess] = useState(false);
 
-  // Game Sessions & Word Analytics State
-  const [gameAnalyticsData, setGameAnalyticsData] = useState<any>(null);
-  const [loadingGameAnalytics, setLoadingGameAnalytics] = useState(false);
-  const [wordSearchQuery, setWordSearchQuery] = useState('');
+  // Multiplayer Rooms Admin State
+  const [adminRoomsList, setAdminRoomsList] = useState<any[]>([]);
+  const [loadingAdminRooms, setLoadingAdminRooms] = useState(false);
+  const [closingAdminRoomCode, setClosingAdminRoomCode] = useState<string | null>(null);
 
-  const fetchGameAnalytics = () => {
-    setLoadingGameAnalytics(true);
-    fetch('/api/games/analytics')
-      .then((res) => res.json())
-      .then((data) => setGameAnalyticsData(data))
-      .catch(() => {})
-      .finally(() => setLoadingGameAnalytics(false));
+  const fetchAdminRooms = async () => {
+    setLoadingAdminRooms(true);
+    try {
+      const res = await fetch('/api/rooms');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.rooms) setAdminRoomsList(json.rooms);
+      }
+    } catch {}
+    finally {
+      setLoadingAdminRooms(false);
+    }
+  };
+
+  const handleAdminCloseRoom = async (roomCode: string) => {
+    if (!confirm(`${roomCode} kodlu odayı kapatmak ve katılan oyunculara canlı uyarı göndermek istediğinize emin misiniz?`)) {
+      return;
+    }
+    setClosingAdminRoomCode(roomCode);
+    try {
+      await fetch(`/api/rooms/${roomCode}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'closed_by_admin',
+          closure_reason: 'Bu oyun odası yönetici (Admin) tarafından sonlandırıldı.',
+        }),
+      });
+      fetchAdminRooms();
+    } catch {
+      alert('Oda kapatılamadı.');
+    } finally {
+      setClosingAdminRoomCode(null);
+    }
+  };
+
+  const handleAdminDeleteRoom = async (roomCode: string) => {
+    if (!confirm(`${roomCode} kodlu odayı tamamen silmek istediğinize emin misiniz?`)) {
+      return;
+    }
+    try {
+      await fetch(`/api/rooms/${roomCode}`, { method: 'DELETE' });
+      fetchAdminRooms();
+    } catch {
+      alert('Oda silinemedi.');
+    }
   };
 
   const fetchMetrics = () => {
@@ -443,12 +482,16 @@ export default function AdminPortalPage() {
       fetchOnboardingSteps();
       fetchAdsData();
       fetchGameAnalytics();
+      fetchAdminRooms();
     }
   }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated && activeTab === 'game_inspector') {
       fetchGameAnalytics();
+    }
+    if (isAuthenticated && activeTab === 'online_rooms') {
+      fetchAdminRooms();
     }
   }, [isAuthenticated, activeTab]);
 
@@ -861,6 +904,7 @@ export default function AdminPortalPage() {
       <nav className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {[
           { id: 'cards', label: 'Kart & Deste Havuzu (CMS)', icon: <Layers className="w-4 h-4" /> },
+          { id: 'online_rooms', label: 'Çok Oyunculu Odalar', icon: <Globe className="w-4 h-4" /> },
           { id: 'game_inspector', label: 'Oyun & Kelime Raporu', icon: <Gamepad2 className="w-4 h-4" /> },
           { id: 'logs', label: 'Hata & Log Merkezi', icon: <Bug className="w-4 h-4" />, badge: logStatsSummary.unresolved > 0 ? logStatsSummary.unresolved : null },
           { id: 'monetization', label: 'Monetizasyon & Paywall', icon: <Crown className="w-4 h-4" /> },
@@ -888,6 +932,184 @@ export default function AdminPortalPage() {
           </button>
         ))}
       </nav>
+
+      {/* TAB: MULTIPLAYER ROOMS & LIVE LOBBIES INSPECTOR */}
+      {activeTab === 'online_rooms' && (
+        <div className="flex flex-col gap-5">
+          {/* Top Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Globe className="w-4 h-4 text-indigo-400" /> Çok Oyunculu Odalar & Canlı Lobi Yönetimi
+              </h3>
+              <span className="text-[10px] text-slate-400">
+                Sistemdeki tüm açık oyun odaları, katılımcılar, canlı durumlar ve anında kapatma/silme kontrolleri
+              </span>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchAdminRooms}
+              disabled={loadingAdminRooms}
+              className="text-xs py-1.5 px-3 bg-slate-900 border-slate-800"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-1 ${loadingAdminRooms ? 'animate-spin' : ''}`} /> Odaları Yenile
+            </Button>
+          </div>
+
+          {/* KPI Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1 shadow-lg">
+              <span className="text-[10px] text-slate-400">Toplam Oda</span>
+              <span className="text-xl font-black text-white">{adminRoomsList.length}</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1 shadow-lg">
+              <span className="text-[10px] text-slate-400">Lobi / Bekliyor</span>
+              <span className="text-xl font-black text-emerald-400">
+                {adminRoomsList.filter((r) => r.status === 'waiting').length}
+              </span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1 shadow-lg">
+              <span className="text-[10px] text-slate-400">Oynanıyor</span>
+              <span className="text-xl font-black text-amber-400">
+                {adminRoomsList.filter((r) => r.status === 'in_progress').length}
+              </span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1 shadow-lg">
+              <span className="text-[10px] text-slate-400">Kapatılan Odalar</span>
+              <span className="text-xl font-black text-rose-400">
+                {adminRoomsList.filter((r) => r.status === 'closed_by_admin' || r.status === 'closed_by_host').length}
+              </span>
+            </div>
+          </div>
+
+          {/* Rooms Table */}
+          <div className="rounded-3xl border border-slate-800 bg-slate-900/90 overflow-hidden shadow-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-950/90 text-[10px] uppercase font-mono text-slate-400 border-b border-slate-800">
+                  <tr>
+                    <th className="py-3 px-4">Oda Kodu</th>
+                    <th className="py-3 px-4">Oda Başlığı</th>
+                    <th className="py-3 px-4">Kurucu (Host)</th>
+                    <th className="py-3 px-4 text-center">Oyuncular</th>
+                    <th className="py-3 px-4 text-center">Ayarlar</th>
+                    <th className="py-3 px-4 text-center">Durum</th>
+                    <th className="py-3 px-4 text-right">Admin Eylemleri</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-mono">
+                  {adminRoomsList.length > 0 ? (
+                    adminRoomsList.map((room) => {
+                      const isClosed = room.status === 'closed_by_admin' || room.status === 'closed_by_host';
+
+                      return (
+                        <tr key={room.id || room.code} className="hover:bg-slate-850/50 transition-colors">
+                          {/* Code & Pin */}
+                          <td className="py-3 px-4 font-bold text-white">
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-black">
+                                {room.code}
+                              </span>
+                              {room.is_private && (
+                                <span className="text-[10px] text-amber-400" title={`PIN: ${room.pin || 'Gizli'}`}>
+                                  🔒 {room.pin || ''}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Title */}
+                          <td className="py-3 px-4 font-bold text-slate-200">
+                            <span className="truncate max-w-[180px] block">{room.title}</span>
+                          </td>
+
+                          {/* Host */}
+                          <td className="py-3 px-4 text-slate-400 text-xs">
+                            <span className="truncate max-w-[120px] block text-slate-300">
+                              {room.host_name || room.host_id || 'Misafir'}
+                            </span>
+                          </td>
+
+                          {/* Players */}
+                          <td className="py-3 px-4 text-center text-slate-300 font-bold">
+                            {room.players?.length || 0} / {room.max_players || 8}
+                          </td>
+
+                          {/* Settings */}
+                          <td className="py-3 px-4 text-center text-slate-400 text-[11px]">
+                            {room.settings?.turn_duration || 60}s • {room.settings?.pass_limit ?? 3} Pas
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-3 px-4 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                              room.status === 'waiting'
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 animate-pulse'
+                                : room.status === 'in_progress'
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                            }`}>
+                              {room.status === 'waiting' ? 'Lobi Açık' :
+                               room.status === 'in_progress' ? 'Oynanıyor' :
+                               room.status === 'closed_by_admin' ? 'Admin Kapattı' : 'Kapatıldı'}
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Open room in new tab */}
+                              <a
+                                href={`/room/${room.code}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-indigo-400 hover:text-white transition-colors"
+                                title="Odayı İncele"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+
+                              {/* Admin Close Button */}
+                              {!isClosed && (
+                                <button
+                                  onClick={() => handleAdminCloseRoom(room.code)}
+                                  disabled={closingAdminRoomCode === room.code}
+                                  className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-[10px] font-black transition-all flex items-center gap-1"
+                                  title="Odayı Kapat & Oyuncuları Çıkar"
+                                >
+                                  <AlertTriangle className="w-3 h-3" />
+                                  <span>{closingAdminRoomCode === room.code ? 'Kapatılıyor...' : 'Kapat'}</span>
+                                </button>
+                              )}
+
+                              {/* Delete Room Button */}
+                              <button
+                                onClick={() => handleAdminDeleteRoom(room.code)}
+                                className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300 transition-colors"
+                                title="Odayı Veritabanından Sil"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-500 text-xs">
+                        Kayıtlı çok oyunculu oda bulunmuyor.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB: GAME SESSIONS & WORD PERFORMANCE INSPECTOR */}
       {activeTab === 'game_inspector' && (
