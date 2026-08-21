@@ -6,8 +6,8 @@ node_modules/
 # Testing
 /coverage
 
-# Next.js Build Cache Only
-/.next/cache/
+# Next.js
+/.next/
 /out/
 
 # Production
