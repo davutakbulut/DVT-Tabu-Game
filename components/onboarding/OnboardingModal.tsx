@@ -74,7 +74,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
   const handleNext = () => {
     soundManager.play('pass');
-    triggerHaptic('tap');
+    triggerHaptic('click');
     if (currentStep < steps.length - 1) {
       const next = currentStep + 1;
       setCurrentStep(next);
@@ -86,7 +86,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
   const handlePrev = () => {
     soundManager.play('tap');
-    triggerHaptic('tap');
+    triggerHaptic('click');
     if (currentStep > 0) {
       setCurrentStep((prev) => prev - 1);
     }
@@ -101,7 +101,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
   const handleComplete = () => {
     soundManager.play('start');
-    triggerHaptic('success');
+    triggerHaptic('correct');
     const elapsed = Math.round((Date.now() - startTime) / 1000);
     analytics.onboardingComplete(elapsed);
     setOnboardingCompleted(true);

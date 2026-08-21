@@ -36,7 +36,7 @@ export default function RoomLobbyPage() {
 
   const { currentRoom, players, teams, isHost, myPlayerId, setTeam, toggleReady, updateRoomSettings, createRoom } = useRoomStore();
   const { initializeGame, setGameMode } = useGameStore();
-  const { guestName, guestId, userEmail } = useUserStore();
+  const { guestName, userId, userEmail } = useUserStore();
 
   const [roomData, setRoomData] = useState<any>(null);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
@@ -45,7 +45,7 @@ export default function RoomLobbyPage() {
   const [isClosedModalOpen, setIsClosedModalOpen] = useState(false);
   const [closureMessage, setClosureMessage] = useState<string>('');
 
-  const myIdentifier = userEmail || guestId || 'guest_local';
+  const myIdentifier = userEmail || userId || 'guest_local';
 
   // 1. Initial Room Sync & Polling Loop
   useEffect(() => {

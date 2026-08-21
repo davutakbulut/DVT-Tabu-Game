@@ -11,6 +11,7 @@ export interface UserStats {
 
 interface UserStoreState {
   userId: string;
+  guestId: string;
   guestName: string;
   userEmail: string | null;
   userAvatar: string | null;
@@ -86,6 +87,7 @@ export const useUserStore = create<UserStoreState>((set, get) => {
 
   return {
     userId: savedUserId,
+    guestId: savedUserId,
     guestName: savedName,
     userEmail: savedEmail,
     userAvatar: savedAvatar,
