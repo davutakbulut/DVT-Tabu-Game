@@ -6,6 +6,13 @@ export const metadata: Metadata = {
   title: 'DVT Tabu Game — Çok Oyunculu Yasaklı Kelime Arenası',
   description: 'AI destekli, ses ve titreşimli gerçek zamanlı çok oyunculu Tabu PWA oyunu.',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.png', type: 'image/png' },
+    ],
+    apple: '/icon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -31,6 +38,7 @@ export default function RootLayout({
     <html lang="tr" className="dark">
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/icon.png" type="image/png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
