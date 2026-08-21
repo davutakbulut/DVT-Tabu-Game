@@ -24,6 +24,7 @@ interface GameStoreState {
   recordBuzzer: (rivalPlayerName?: string, rivalTeamId?: string) => void;
   recordTimeout: () => void;
   endTurnAndNext: () => void;
+  finishGameEarly: () => void;
   resetGame: () => void;
   clearActiveGame: () => void;
   updateSettings: (newSettings: Partial<GameSettings>) => void;
@@ -423,12 +424,14 @@ export const useGameStore = create<GameStoreState>()(
         const { gameState, teams, settings, cardPool, isGoldenRound, gameId } = get();
         const nextTeamIndex = calculateNextTeamIndex(gameState.active_team_index, teams.length);
         const nextRound = nextTeamIndex === 0 ? gameState.current_round + 1 : gameState.current_round;
+        const isRoundComplete = nextTeamIndex === 0;
 
         const gameEndResult = checkGameEnd(
           nextRound,
           settings.total_rounds,
           teams,
-          settings.target_score
+          settings.target_score,
+          isRoundComplete
         );
 
         if (gameEndResult.isEnded) {
@@ -469,6 +472,17 @@ export const useGameStore = create<GameStoreState>()(
 
         set({ gameState: nextGameState });
         syncGameSessionToBackend(gameId, nextGameState, teams, settings);
+      },
+
+      finishGameEarly: () => {
+        const { gameState, teams, settings, gameId } = get();
+        const finishedState: ActiveGameState = {
+          ...gameState,
+          status: 'finished',
+        };
+        set({ gameState: finishedState });
+        soundManager.playFanfare();
+        syncGameSessionToBackend(gameId, finishedState, teams, settings, 'finished');
       },
 
       resetGame: () => {

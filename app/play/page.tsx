@@ -30,6 +30,7 @@ export default function PlayPage() {
     recordBuzzer,
     recordTimeout,
     endTurnAndNext,
+    finishGameEarly,
     resetGame,
   } = useGameStore();
 
@@ -75,6 +76,9 @@ export default function PlayPage() {
     return activeTeam.players[playerIdx];
   }, [activeTeam, gameState.current_round]);
 
+  const isLastTeamOfRound = gameState.active_team_index === teams.length - 1;
+  const isFinalTurnOfGame = isLastTeamOfRound && gameState.current_round >= gameState.total_rounds;
+
   const handleNextTeam = () => {
     const nextTurn = turnsPlayed + 1;
     setTurnsPlayed(nextTurn);
@@ -99,10 +103,10 @@ export default function PlayPage() {
       <header className="flex items-center justify-between gap-2 pb-2">
         <div className="flex items-center gap-2">
           <div
-            className="w-3.5 h-3.5 rounded-full animate-pulse"
-            style={{ backgroundColor: activeTeam?.color || '#6366f1' }}
+            className="w-3.5 h-3.5 rounded-full animate-pulse ring-2 ring-white/20"
+            style={{ backgroundColor: activeTeam?.color || '#f59e0b' }}
           />
-          <span className="text-sm font-extrabold text-white truncate max-w-[130px]">
+          <span className="text-sm font-black text-white truncate max-w-[130px]">
             {activeTeam?.name}
           </span>
         </div>
@@ -198,16 +202,26 @@ export default function PlayPage() {
             animate={{ scale: 1, opacity: 1 }}
             className="w-full max-w-sm rounded-2xl tabletop-card p-6 text-center flex flex-col items-center gap-4 shadow-2xl"
           >
-            <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40">
+            <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse">
               <Trophy className="w-10 h-10" />
             </div>
 
             <div>
               <h3 className="text-xl font-black text-white inline-flex items-center gap-1.5">
-                Süre Doldu! <Clock className="w-5 h-5 text-amber-400" />
+                {isFinalTurnOfGame ? (
+                  <>
+                    Maç Tamamlandı! <Trophy className="w-5 h-5 text-amber-400" />
+                  </>
+                ) : (
+                  <>
+                    Süre Doldu! <Clock className="w-5 h-5 text-amber-400" />
+                  </>
+                )}
               </h3>
               <p className="text-xs text-slate-400 mt-1 font-medium">
-                {activeTeam?.name} bu turdaki süresini tamamladı.
+                {isFinalTurnOfGame
+                  ? 'Tüm turlar tamamlandı. Şampiyon ve maç istatistiklerini görmek için dokunun!'
+                  : `${activeTeam?.name} bu turdaki süresini tamamladı.`}
               </p>
             </div>
 
@@ -237,7 +251,7 @@ export default function PlayPage() {
               onClick={handleNextTeam}
               className="w-full py-4 rounded-xl btn-3d-gold text-slate-950 font-black text-base shadow-xl flex items-center justify-center gap-2"
             >
-              <span>Sonraki Takıma Geç</span>
+              <span>{isFinalTurnOfGame ? '🏆 Kazananı & Sonuçları Gör' : 'Sonraki Takıma Geç'}</span>
               <ArrowRight className="w-5 h-5" />
             </button>
           </motion.div>
@@ -270,7 +284,10 @@ export default function PlayPage() {
       {/* Interstitial Ad Modal */}
       <InterstitialAdModal
         isOpen={isAdModalOpen}
-        onClose={() => setIsAdModalOpen(false)}
+        onClose={() => {
+          setIsAdModalOpen(false);
+          endTurnAndNext();
+        }}
         onAdFinished={() => endTurnAndNext()}
         placement="turn_break"
       />
@@ -279,13 +296,26 @@ export default function PlayPage() {
       <AnimatePresence>
         {isPaused && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-xs w-full text-center flex flex-col gap-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-xs w-full text-center flex flex-col gap-4 shadow-2xl">
               <h3 className="text-lg font-black text-white">Oyun Duraklatıldı</h3>
               <p className="text-xs text-slate-400">Nefeslenin ve hazır olunca devam edin.</p>
 
               <div className="flex flex-col gap-2 pt-2">
                 <Button variant="primary" fullWidth onClick={() => setIsPaused(false)}>
                   Devam Et
+                </Button>
+                <Button
+                  variant="warning"
+                  fullWidth
+                  onClick={() => {
+                    if (confirm('Oyunu şimdi bitirip sonuçları ve şampiyonu görmek istiyor musunuz?')) {
+                      setIsPaused(false);
+                      finishGameEarly();
+                    }
+                  }}
+                >
+                  <Trophy className="w-4 h-4 mr-1.5" />
+                  Maçı Bitir & Sonuçları Gör
                 </Button>
                 <Button variant="ghost" fullWidth onClick={() => router.push('/')}>
                   Ana Ekrana Dön

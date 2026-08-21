@@ -36,18 +36,19 @@ export const checkGameEnd = (
   currentRound: number,
   totalRounds: number,
   teams: Team[],
-  targetScore?: number | null
+  targetScore?: number | null,
+  isRoundComplete: boolean = true
 ): { isEnded: boolean; isTie: boolean; winnerTeam?: Team } => {
   // Target score mode
   if (targetScore && targetScore > 0) {
-    const reached = teams.find(t => t.score >= targetScore);
+    const reached = teams.find((t) => t.score >= targetScore);
     if (reached) {
       return { isEnded: true, isTie: false, winnerTeam: reached };
     }
   }
 
-  // Round completed mode
-  if (currentRound > totalRounds) {
+  // Round completed mode: All teams must have completed their turns in the final round
+  if (isRoundComplete && currentRound > totalRounds) {
     const sorted = [...teams].sort((a, b) => b.score - a.score);
     if (sorted.length > 1 && sorted[0].score === sorted[1].score) {
       return { isEnded: true, isTie: true }; // Trigger Golden Round
