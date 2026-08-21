@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAdminStore } from '@/stores/adminStore';
 import { useVersion } from '@/components/version/VersionProvider';
 import { useUserStore } from '@/stores/userStore';
@@ -65,36 +65,108 @@ import {
   Tv,
   Gamepad2,
   RefreshCw,
-  Radio
+  Radio,
+  Copy,
+  Link as LinkIcon
 } from 'lucide-react';
 import { sendLog } from '@/lib/logger';
 import { DEFAULT_ONBOARDING_STEPS, OnboardingStepItem } from '@/types/onboarding';
 import { AdConfig, AdItem, DEFAULT_AD_CONFIG, DEFAULT_ADS } from '@/types/ads';
 import { LivePresenceRadar } from '@/components/admin/LivePresenceRadar';
 
-export default function AdminPortalPage() {
+export type AdminTabId =
+  | 'live_radar'
+  | 'cards'
+  | 'online_rooms'
+  | 'game_inspector'
+  | 'logs'
+  | 'monetization'
+  | 'ads'
+  | 'analytics'
+  | 'versions'
+  | 'onboarding';
+
+function AdminPortalContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, login, logout, updatePin, getCurrentPin } = useAdminStore();
   const { currentVersion, updateInfo, checkNow } = useVersion();
   const { setOnboardingCompleted } = useUserStore();
 
   const [hasMounted, setHasMounted] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  // PIN Change State
+  // PIN Change & Auth Form State
   const [isChangePinOpen, setIsChangePinOpen] = useState(false);
   const [newPinValue, setNewPinValue] = useState('');
   const [pinChangeSuccess, setPinChangeSuccess] = useState(false);
-
-  // Auth Form State
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
 
-  // Active Tab: 'live_radar' | 'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'online_rooms' | 'logs' | 'versions' | 'onboarding'
-  const [activeTab, setActiveTab] = useState<'live_radar' | 'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'online_rooms' | 'logs' | 'versions' | 'onboarding'>('live_radar');
+  // Active Tab & Sub Tab with URL synchronization
+  const [activeTab, setActiveTabState] = useState<AdminTabId>('live_radar');
+  const [cmsSubTab, setCmsSubTabState] = useState<'decks' | 'cards' | 'add_card' | 'bulk_import'>('decks');
+
+  useEffect(() => {
+    setHasMounted(true);
+
+    const validTabs: AdminTabId[] = [
+      'live_radar', 'cards', 'online_rooms', 'game_inspector',
+      'logs', 'monetization', 'ads', 'analytics', 'versions', 'onboarding'
+    ];
+
+    const urlTab = searchParams.get('tab');
+    const urlSub = searchParams.get('sub');
+
+    if (urlTab && validTabs.includes(urlTab as AdminTabId)) {
+      setActiveTabState(urlTab as AdminTabId);
+      try { localStorage.setItem('dvt_admin_active_tab', urlTab); } catch {}
+    } else {
+      try {
+        const savedTab = localStorage.getItem('dvt_admin_active_tab');
+        if (savedTab && validTabs.includes(savedTab as AdminTabId)) {
+          setActiveTabState(savedTab as AdminTabId);
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set('tab', savedTab);
+          window.history.replaceState({}, '', newUrl.toString());
+        }
+      } catch {}
+    }
+
+    if (urlSub && ['decks', 'cards', 'add_card', 'bulk_import'].includes(urlSub)) {
+      setCmsSubTabState(urlSub as any);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tabId: AdminTabId) => {
+    setActiveTabState(tabId);
+    try {
+      localStorage.setItem('dvt_admin_active_tab', tabId);
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('tab', tabId);
+      if (tabId !== 'cards') {
+        newUrl.searchParams.delete('sub');
+      }
+      window.history.pushState({}, '', newUrl.toString());
+    } catch {}
+  };
+
+  const handleCmsSubTabChange = (subId: 'decks' | 'cards' | 'add_card' | 'bulk_import') => {
+    setCmsSubTabState(subId);
+    try {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('tab', 'cards');
+      newUrl.searchParams.set('sub', subId);
+      window.history.pushState({}, '', newUrl.toString());
+    } catch {}
+  };
+
+  const handleCopyCurrentUrl = () => {
+    if (typeof window === 'undefined') return;
+    navigator.clipboard.writeText(window.location.href);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2000);
+  };
 
   // Analytics Data
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -136,7 +208,6 @@ export default function AdminPortalPage() {
   const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
 
   // Decks & Cards CMS State
-  const [cmsSubTab, setCmsSubTab] = useState<'decks' | 'cards' | 'add_card' | 'bulk_import'>('decks');
   const [decks, setDecks] = useState<any[]>([]);
   const [cards, setCards] = useState<any[]>([]);
   const [loadingCards, setLoadingCards] = useState(false);
@@ -939,7 +1010,7 @@ export default function AdminPortalPage() {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => handleTabChange(tab.id as any)}
             className={`flex items-center gap-2 py-2.5 px-4 rounded-2xl text-xs font-black transition-all shrink-0 whitespace-nowrap relative ${
               activeTab === tab.id
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 border border-indigo-400/30'
@@ -956,6 +1027,28 @@ export default function AdminPortalPage() {
           </button>
         ))}
       </nav>
+
+      {/* Persistent Direct Page URL Bar (Bookmarkable & Refresh-Safe) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2.5 px-4 bg-slate-900/70 border border-slate-800/80 rounded-2xl text-xs backdrop-blur-md">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-extrabold text-slate-300 flex items-center gap-1.5">
+            <LinkIcon className="w-3.5 h-3.5 text-indigo-400" />
+            Doğrudan Sayfa URL:
+          </span>
+          <code className="font-mono text-indigo-300 bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/25 font-bold">
+            /admin?tab={activeTab}{activeTab === 'cards' && cmsSubTab !== 'decks' ? `&sub=${cmsSubTab}` : ''}
+          </code>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleCopyCurrentUrl}
+          className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 py-1.5 px-3 rounded-xl border border-slate-700/60 transition-all self-start sm:self-auto shadow-sm"
+        >
+          {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+          <span>{copiedUrl ? 'Bağlantı Kopyalandı!' : 'Bu Sayfanın Linkini Kopyala'}</span>
+        </button>
+      </div>
 
       {/* TAB: CANLI İZLEME & GERÇEK ZAMANLI RADAR */}
       {activeTab === 'live_radar' && (
@@ -1662,7 +1755,7 @@ export default function AdminPortalPage() {
               ].map((sub) => (
                 <button
                   key={sub.id}
-                  onClick={() => setCmsSubTab(sub.id as any)}
+                  onClick={() => handleCmsSubTabChange(sub.id as any)}
                   className={`py-2 px-3 rounded-xl text-xs font-black transition-all text-center sm:text-left ${
                     cmsSubTab === sub.id
                       ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
@@ -1736,7 +1829,7 @@ export default function AdminPortalPage() {
                       <button
                         onClick={() => {
                           setSelectedDeckFilter(deck.id);
-                          setCmsSubTab('cards');
+                          handleCmsSubTabChange('cards');
                         }}
                         className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1"
                       >
@@ -3693,5 +3786,18 @@ export default function AdminPortalPage() {
       <OnboardingModal isOpen={isTestOnboardingOpen} onClose={() => setIsTestOnboardingOpen(false)} />
       <InterstitialAdModal isOpen={isTestAdModalOpen} onClose={() => setIsTestAdModalOpen(false)} placement="all" />
     </div>
+  );
+}
+
+export default function AdminPortalPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3 text-slate-400">
+        <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+        <span className="text-xs font-bold font-mono">Yönetim Portalı Yükleniyor...</span>
+      </div>
+    }>
+      <AdminPortalContent />
+    </Suspense>
   );
 }
