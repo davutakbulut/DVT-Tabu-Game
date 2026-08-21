@@ -236,6 +236,20 @@ export default function AdminPortalPage() {
     }
   };
 
+  // Game Sessions & Word Analytics State
+  const [gameAnalyticsData, setGameAnalyticsData] = useState<any>(null);
+  const [loadingGameAnalytics, setLoadingGameAnalytics] = useState(false);
+  const [wordSearchQuery, setWordSearchQuery] = useState('');
+
+  const fetchGameAnalytics = () => {
+    setLoadingGameAnalytics(true);
+    fetch('/api/games/analytics')
+      .then((res) => res.json())
+      .then((data) => setGameAnalyticsData(data))
+      .catch(() => {})
+      .finally(() => setLoadingGameAnalytics(false));
+  };
+
   const fetchMetrics = () => {
     setLoadingMetrics(true);
     fetch('/api/analytics')
