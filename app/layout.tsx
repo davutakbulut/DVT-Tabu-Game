@@ -3,6 +3,7 @@ import './globals.css';
 import { VersionProvider } from '@/components/version/VersionProvider';
 import { GlobalErrorTracker } from '@/components/error/GlobalErrorTracker';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import { LivePresenceTracker } from '@/components/presence/LivePresenceTracker';
 
 export const metadata: Metadata = {
   title: 'DVT Tabu Game — Çok Oyunculu Yasaklı Kelime Arenası',
@@ -45,6 +46,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+        <LivePresenceTracker />
         <GlobalErrorTracker />
         <ErrorBoundary>
           <VersionProvider>

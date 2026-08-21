@@ -64,11 +64,13 @@ import {
   ExternalLink,
   Tv,
   Gamepad2,
-  RefreshCw
+  RefreshCw,
+  Radio
 } from 'lucide-react';
 import { sendLog } from '@/lib/logger';
 import { DEFAULT_ONBOARDING_STEPS, OnboardingStepItem } from '@/types/onboarding';
 import { AdConfig, AdItem, DEFAULT_AD_CONFIG, DEFAULT_ADS } from '@/types/ads';
+import { LivePresenceRadar } from '@/components/admin/LivePresenceRadar';
 
 export default function AdminPortalPage() {
   const router = useRouter();
@@ -91,8 +93,8 @@ export default function AdminPortalPage() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
 
-  // Active Tab: 'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'online_rooms' | 'logs' | 'versions' | 'onboarding'
-  const [activeTab, setActiveTab] = useState<'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'online_rooms' | 'logs' | 'versions' | 'onboarding'>('cards');
+  // Active Tab: 'live_radar' | 'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'online_rooms' | 'logs' | 'versions' | 'onboarding'
+  const [activeTab, setActiveTab] = useState<'live_radar' | 'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'online_rooms' | 'logs' | 'versions' | 'onboarding'>('live_radar');
 
   // Analytics Data
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -924,6 +926,7 @@ export default function AdminPortalPage() {
       {/* Admin Main Navigation Tabs */}
       <nav className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {[
+          { id: 'live_radar', label: 'Canlı Radar & Anlık Takip', icon: <Radio className="w-4 h-4 text-emerald-400 animate-pulse" /> },
           { id: 'cards', label: 'Kart & Deste Havuzu (CMS)', icon: <Layers className="w-4 h-4" /> },
           { id: 'online_rooms', label: 'Çok Oyunculu Odalar', icon: <Globe className="w-4 h-4" /> },
           { id: 'game_inspector', label: 'Oyun & Kelime Raporu', icon: <Gamepad2 className="w-4 h-4" /> },
@@ -953,6 +956,11 @@ export default function AdminPortalPage() {
           </button>
         ))}
       </nav>
+
+      {/* TAB: CANLI İZLEME & GERÇEK ZAMANLI RADAR */}
+      {activeTab === 'live_radar' && (
+        <LivePresenceRadar />
+      )}
 
       {/* TAB: MULTIPLAYER ROOMS & LIVE LOBBIES INSPECTOR */}
       {activeTab === 'online_rooms' && (
