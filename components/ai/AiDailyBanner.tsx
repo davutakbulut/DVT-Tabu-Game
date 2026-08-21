@@ -8,53 +8,53 @@ interface AiDailyBannerProps {
   onApplyMode?: (mode: any) => void;
 }
 
+const LOCAL_STORAGE_KEY = 'dvt_daily_ai_insight';
+const CLIENT_CACHE_TTL = 4 * 60 * 60 * 1000; // 4 saat
+
 export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({ onApplyMode }) => {
   const [data, setData] = useState<AiRecommendation | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const fetchDailyInsights = async () => {
+  const fetchDailyInsights = async (force: boolean = false) => {
+    // Check client-side cache first
+    if (!force && typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Date.now() - parsed.timestamp < CLIENT_CACHE_TTL && parsed.data) {
+            setData(parsed.data);
+            return;
+          }
+        }
+      } catch {}
+    }
+
     setLoading(true);
     try {
       const res = await fetch('/api/ai/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'daily_recommendation' }),
+        body: JSON.stringify({ type: 'daily_recommendation', forceRefresh: force }),
       });
       if (res.ok) {
         const json = await res.json();
         if (!json.error) {
           setData(json);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ data: json, timestamp: Date.now() }));
+          }
         }
       }
     } catch {
-      // Fallback local data if offline or error
-      setData({
-        date: new Date().toISOString().split('T')[0],
-        headline: 'Günün Tabu Arenası: Hızlı ve Zeki Olan Kazanır! 🚀',
-        daily_vibe: 'Bugün Genel Kültür ve Sinema kategorilerinde rekor denemesi günü!',
-        recommended_modes: [
-          {
-            title: 'Express Mod (45s)',
-            recommended_duration_seconds: 45,
-            recommended_pass_limit: 2,
-            reason: 'Zamana karşı adrenalin dolu hızlı kapışma.'
-          }
-        ],
-        featured_card_of_the_day: {
-          id: 'ai-feat',
-          main_word: 'YAPAY ZEKA',
-          forbidden_words: ['ROBOT', 'ALGORİTMA', 'BİLGİSAYAR', 'GELECEK', 'CHATGPT'],
-          category: 'Teknoloji',
-          difficulty: 'Orta'
-        }
-      });
+      // Fallback
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDailyInsights();
+    fetchDailyInsights(false);
   }, []);
 
   if (!data && !loading) return null;
@@ -73,7 +73,7 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({ onApplyMode }) => 
           </span>
         </div>
         <button
-          onClick={fetchDailyInsights}
+          onClick={() => fetchDailyInsights(true)}
           disabled={loading}
           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors disabled:opacity-50"
           title="Yenile"
