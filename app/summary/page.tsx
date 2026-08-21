@@ -3,20 +3,41 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '@/stores/gameStore';
+import { useUserStore } from '@/stores/userStore';
 import { Button } from '@/components/ui/Button';
+import { PaywallModal } from '@/components/monetization/PaywallModal';
 import confetti from 'canvas-confetti';
-import { Trophy, Sparkles, RotateCcw, Home, Share2, Award, Check } from 'lucide-react';
+import { Trophy, Sparkles, RotateCcw, Home, Share2, Award, Check, Crown } from 'lucide-react';
+import { analytics } from '@/lib/analytics';
 import { AiMatchSummary } from '@/types/game';
 
 export default function SummaryPage() {
   const router = useRouter();
   const { teams, resetGame, gameState } = useGameStore();
+  const { totalGamesPlayed, incrementGamesPlayed, isProUser } = useUserStore();
+
   const [aiSummary, setAiSummary] = useState<AiMatchSummary | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
   const winner = sortedTeams[0];
+
+  // Increment game count & track analytics
+  useEffect(() => {
+    analytics.pageView('/summary');
+    const newCount = incrementGamesPlayed();
+    analytics.gameFinish(winner?.score || 0, gameState.total_rounds, newCount);
+
+    // If 2 or more games played and not pro user, trigger paywall with 1.8s delay
+    if (newCount >= 2 && !isProUser) {
+      const timer = setTimeout(() => {
+        setIsPaywallOpen(true);
+      }, 1800);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // Fireworks confetti celebration
   useEffect(() => {
@@ -197,6 +218,13 @@ export default function SummaryPage() {
           </Button>
         </div>
       </div>
+
+      {/* 2 Games Played Paywall Modal */}
+      <PaywallModal
+        isOpen={isPaywallOpen}
+        onClose={() => setIsPaywallOpen(false)}
+        triggerSource="after_2_games"
+      />
     </div>
   );
 }

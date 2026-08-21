@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
@@ -10,6 +10,7 @@ import { AiDailyBanner } from '@/components/ai/AiDailyBanner';
 import { DeckGeneratorModal } from '@/components/ai/DeckGeneratorModal';
 import { RuleSettingsModal } from '@/components/game/RuleSettingsModal';
 import { ChangelogModal } from '@/components/ui/ChangelogModal';
+import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
 import { 
   Play, 
   Users, 
@@ -20,23 +21,34 @@ import {
   Flame, 
   HelpCircle,
   Trophy,
-  ShieldAlert,
-  History
+  History,
+  BarChart3,
+  Crown
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
+import { analytics } from '@/lib/analytics';
 import { Card } from '@/types/game';
 
 export default function HomePage() {
   const router = useRouter();
   const { initializeGame, setGameMode, settings, updateSettings, teams } = useGameStore();
   const { createRoom } = useRoomStore();
-  const { soundEnabled, toggleSound, guestName, setGuestName } = useUserStore();
+  const { soundEnabled, toggleSound, guestName, setGuestName, hasCompletedOnboarding } = useUserStore();
 
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
-  const [isHowToPlayOpen, setIsHowToPlayOpen] = useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const [customCards, setCustomCards] = useState<Card[]>([]);
+
+  // Automatically trigger onboarding on first visit
+  useEffect(() => {
+    analytics.pageView('/');
+    if (!hasCompletedOnboarding) {
+      const timer = setTimeout(() => setIsOnboardingOpen(true), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [hasCompletedOnboarding]);
 
   const handleSoundToggle = () => {
     toggleSound();
@@ -47,6 +59,7 @@ export default function HomePage() {
   const handleStartSingleDevice = () => {
     setGameMode('single_device');
     initializeGame(teams, settings, customCards);
+    analytics.gameStart('single_device', teams.length);
     router.push('/play');
   };
 
@@ -88,6 +101,13 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push('/analytics')}
+            className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
+            title="Analitik & Raporlama Paneli"
+          >
+            <BarChart3 className="w-4 h-4 text-emerald-400" />
+          </button>
           <button
             onClick={handleSoundToggle}
             className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
@@ -197,7 +217,7 @@ export default function HomePage() {
         </button>
 
         <button
-          onClick={() => setIsHowToPlayOpen(true)}
+          onClick={() => setIsOnboardingOpen(true)}
           className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors"
         >
           <HelpCircle className="w-3.5 h-3.5" /> Nasıl Oynanır?
@@ -205,6 +225,12 @@ export default function HomePage() {
       </footer>
 
       {/* Modals */}
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        onStartGame={handleStartSingleDevice}
+      />
+
       <RuleSettingsModal
         isOpen={isRuleModalOpen}
         onClose={() => setIsRuleModalOpen(false)}
@@ -222,26 +248,6 @@ export default function HomePage() {
         isOpen={isChangelogOpen}
         onClose={() => setIsChangelogOpen(false)}
       />
-
-      {/* How to play modal */}
-      {isHowToPlayOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-slate-200 flex flex-col gap-4">
-            <h3 className="text-lg font-black text-white flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-indigo-400" /> Tabu Kuralları
-            </h3>
-            <ul className="text-xs flex flex-col gap-2.5 text-slate-300 list-disc pl-4">
-              <li>Anlatıcı ana kelimeyi altındaki <strong>5 yasaklı kelimeyi</strong> kullanmadan anlatır.</li>
-              <li>Doğru bilinirse <strong>+1 Puan</strong> kazanılır.</li>
-              <li>Tur başına <strong>3 Pas</strong> hakkınız vardır (puan değişmez).</li>
-              <li>Yasaklı kelime söylenirse rakip takım <strong>Buzzer'a</strong> basar (<strong>-1 Puan</strong> ceza ve tur sonu).</li>
-            </ul>
-            <Button variant="primary" fullWidth onClick={() => setIsHowToPlayOpen(false)}>
-              Anladım
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
