@@ -154,15 +154,15 @@ export default function HomePage() {
             ) : (
               <div 
                 suppressHydrationWarning
-                className="w-5 h-5 rounded-lg bg-amber-500 text-slate-950 font-black text-[11px] flex items-center justify-center"
+                className="w-5 h-5 rounded-lg bg-amber-500 text-slate-950 font-black text-[11px] flex items-center justify-center shrink-0"
               >
-                {isMounted ? (guestName?.charAt(0)?.toUpperCase() || 'M') : 'M'}
+                {guestName ? guestName.charAt(0).toUpperCase() : 'U'}
               </div>
             )}
-            <span suppressHydrationWarning className="text-[11px] font-black truncate max-w-[65px]">
-              {isMounted ? guestName : 'Misafir'}
+            <span suppressHydrationWarning className="text-[11px] font-black truncate max-w-[80px]">
+              {guestName || 'Usta Tabucu'}
             </span>
-            {isMounted && isProUser && (
+            {isProUser && (
               <Crown className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
             )}
           </button>

@@ -140,14 +140,16 @@ export const useUserStore = create<UserStoreState>((set, get) => {
           }
         }
 
-        // 2. Fetch profile from DB
-        const res = await fetch(`/api/user/profile?userId=${encodeURIComponent(state.userId)}`);
+        // 2. Fetch profile from DB using current active user ID
+        const currentUserId = get().userId;
+        const res = await fetch(`/api/user/profile?userId=${encodeURIComponent(currentUserId)}`);
         if (res.ok) {
           const json = await res.json();
           if (json.profile) {
             const p = json.profile;
             const settings = json.settings || {};
             const stats = json.stats || {};
+            const isPro = typeof p.is_pro === 'boolean' ? p.is_pro : get().isProUser;
 
             set({
               guestName: p.display_name || state.guestName,
@@ -155,7 +157,7 @@ export const useUserStore = create<UserStoreState>((set, get) => {
               userAvatar: p.avatar_url || state.userAvatar,
               provider: p.provider || state.provider,
               isLoggedIn: p.provider !== 'guest',
-              isProUser: p.is_pro ?? state.isProUser,
+              isProUser: isPro,
               turnDuration: settings.turn_duration ?? state.turnDuration,
               passLimit: settings.pass_limit ?? state.passLimit,
               soundEnabled: settings.sound_enabled ?? state.soundEnabled,
@@ -174,6 +176,7 @@ export const useUserStore = create<UserStoreState>((set, get) => {
             localStorage.setItem('dvt_display_name', p.display_name || state.guestName);
             localStorage.setItem('dvt_user_provider', p.provider || 'guest');
             localStorage.setItem('dvt_is_logged_in', p.provider !== 'guest' ? 'true' : 'false');
+            localStorage.setItem('dvt_is_pro_user', isPro ? 'true' : 'false');
             return;
           }
         }
@@ -287,9 +290,11 @@ export const useUserStore = create<UserStoreState>((set, get) => {
         if (res.ok) {
           const json = await res.json();
           if (json.profile) {
+            const isPro = Boolean(json.profile.is_pro ?? state.isProUser);
             set({
               provider: json.profile.provider,
               isLoggedIn: true,
+              isProUser: isPro,
               userEmail: json.profile.email,
               guestName: json.profile.display_name || name,
               userAvatar: json.profile.avatar_url || avatarUrl || null,
@@ -298,6 +303,7 @@ export const useUserStore = create<UserStoreState>((set, get) => {
             if (typeof window !== 'undefined') {
               localStorage.setItem('dvt_user_provider', provider);
               localStorage.setItem('dvt_is_logged_in', 'true');
+              localStorage.setItem('dvt_is_pro_user', isPro ? 'true' : 'false');
               localStorage.setItem('dvt_user_email', email);
               localStorage.setItem('dvt_display_name', name);
               if (avatarUrl) localStorage.setItem('dvt_user_avatar', avatarUrl);
