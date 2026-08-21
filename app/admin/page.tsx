@@ -1028,28 +1028,6 @@ function AdminPortalContent() {
         ))}
       </nav>
 
-      {/* Persistent Direct Page URL Bar (Bookmarkable & Refresh-Safe) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2.5 px-4 bg-slate-900/70 border border-slate-800/80 rounded-2xl text-xs backdrop-blur-md">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-extrabold text-slate-300 flex items-center gap-1.5">
-            <LinkIcon className="w-3.5 h-3.5 text-indigo-400" />
-            Doğrudan Sayfa URL:
-          </span>
-          <code className="font-mono text-indigo-300 bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/25 font-bold">
-            /admin?tab={activeTab}{activeTab === 'cards' && cmsSubTab !== 'decks' ? `&sub=${cmsSubTab}` : ''}
-          </code>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleCopyCurrentUrl}
-          className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 py-1.5 px-3 rounded-xl border border-slate-700/60 transition-all self-start sm:self-auto shadow-sm"
-        >
-          {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
-          <span>{copiedUrl ? 'Bağlantı Kopyalandı!' : 'Bu Sayfanın Linkini Kopyala'}</span>
-        </button>
-      </div>
-
       {/* TAB: CANLI İZLEME & GERÇEK ZAMANLI RADAR */}
       {activeTab === 'live_radar' && (
         <LivePresenceRadar />
@@ -3779,6 +3757,30 @@ function AdminPortalContent() {
           </div>
         </div>
       )}
+
+      {/* Persistent Direct Page URL Footer (Bookmarkable & Refresh-Safe) */}
+      <footer className="mt-8 pt-4 border-t border-slate-800/80">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-3 px-4 bg-slate-900/80 border border-slate-800/90 rounded-2xl text-xs backdrop-blur-md shadow-lg">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-extrabold text-slate-300 flex items-center gap-1.5">
+              <LinkIcon className="w-3.5 h-3.5 text-indigo-400" />
+              Doğrudan Sayfa URL:
+            </span>
+            <code className="font-mono text-indigo-300 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/25 font-bold">
+              /admin?tab={activeTab}{activeTab === 'cards' && cmsSubTab !== 'decks' ? `&sub=${cmsSubTab}` : ''}
+            </code>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCopyCurrentUrl}
+            className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 py-1.5 px-3.5 rounded-xl border border-slate-700/60 transition-all self-start sm:self-auto shadow-sm"
+          >
+            {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+            <span>{copiedUrl ? 'Bağlantı Kopyalandı!' : 'Bu Sayfanın Linkini Kopyala'}</span>
+          </button>
+        </div>
+      </footer>
 
       {/* Modals */}
       <PaywallModal isOpen={isTestPaywallOpen} onClose={() => setIsTestPaywallOpen(false)} triggerSource="admin_preview" />
