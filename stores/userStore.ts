@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export interface UserStats {
   totalGamesPlayed: number;
@@ -296,6 +297,12 @@ export const useUserStore = create<UserStoreState>((set, get) => {
     logoutUser: async () => {
       const newGuestId = generateGuestId();
       const defaultName = 'Usta Tabucu';
+
+      try {
+        if (isSupabaseConfigured()) {
+          await supabase.auth.signOut();
+        }
+      } catch {}
 
       if (typeof window !== 'undefined') {
         localStorage.setItem('dvt_user_id', newGuestId);
