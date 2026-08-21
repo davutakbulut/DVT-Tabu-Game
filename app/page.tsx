@@ -41,6 +41,7 @@ import {
 import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
 import { Card } from '@/types/game';
+import { motion } from 'framer-motion';
 
 const RANDOM_NICKNAMES = [
   'UstaTabucu', 'GizemliKaplan', 'KelimeAvcısı', 'HızlıAnlatıcı', 
@@ -92,6 +93,18 @@ export default function HomePage() {
     const random = RANDOM_NICKNAMES[Math.floor(Math.random() * RANDOM_NICKNAMES.length)];
     setGuestName(random);
     soundManager.play('pass');
+  };
+
+  const [isCharging, setIsCharging] = useState(false);
+
+  const handleLaunchGameSetup = () => {
+    if (isCharging) return;
+    setIsCharging(true);
+    soundManager.play('start');
+    setTimeout(() => {
+      setIsCharging(false);
+      setIsGameSetupOpen(true);
+    }, 450);
   };
 
   const handleApplyAiMode = (mode: any) => {
@@ -239,20 +252,34 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* GIANT 3D TACTILE CTA: OYUN BAŞLAT */}
-          <div className="flex flex-col gap-1.5">
+          {/* GIANT 3D TACTILE CTA: OYUN BAŞLAT (Centered with Bar Fill Animation) */}
+          <div className="flex flex-col gap-2">
             <button
-              onClick={() => setIsGameSetupOpen(true)}
-              className="w-full py-4.5 rounded-2xl btn-3d-emerald text-white font-black text-lg sm:text-xl tracking-wide flex items-center justify-center gap-3 shadow-xl"
+              onClick={handleLaunchGameSetup}
+              disabled={isCharging}
+              className="w-full py-4.5 rounded-2xl btn-3d-emerald text-white font-black text-lg sm:text-xl tracking-wider flex items-center justify-center gap-2.5 shadow-xl relative overflow-hidden select-none active:scale-[0.99] transition-transform"
             >
-              <Play className="w-6 h-6 fill-white drop-shadow-md" />
-              <span>OYUN BAŞLAT</span>
-              <span className="text-[11px] font-extrabold bg-black/20 text-emerald-100 px-2.5 py-1 rounded-xl uppercase tracking-wider">
-                {teams.length} Takım
-              </span>
+              {/* Charging / Filling Animation Bar */}
+              {isCharging && (
+                <motion.div
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 0.4, ease: 'easeInOut' }}
+                  className="absolute inset-0 bg-white/35 backdrop-blur-sm pointer-events-none z-0"
+                />
+              )}
+
+              <Play className={`w-6 h-6 fill-white drop-shadow-md relative z-10 transition-transform ${isCharging ? 'scale-125' : ''}`} />
+              <span className="relative z-10">{isCharging ? 'HAZIRLANIYOR...' : 'OYUN BAŞLAT'}</span>
             </button>
-            <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400">
-              <span>⏱️ {settings.turn_duration}s Süre</span>
+
+            {/* Bottom Summary Indicators (Including Team Count) */}
+            <div className="flex items-center justify-center gap-2 text-[10px] font-extrabold text-slate-400">
+              <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                👥 {teams.length} Takım
+              </span>
+              <span>•</span>
+              <span>⏱️ {settings.turn_duration}s</span>
               <span>•</span>
               <span>🔄 {settings.pass_limit >= 99 ? '∞' : settings.pass_limit} Pas</span>
               <span>•</span>
