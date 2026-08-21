@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
+import { useUserStore } from '@/stores/userStore';
 import { AdItem, AdConfig, DEFAULT_AD_CONFIG, DEFAULT_ADS, AdDisplayType } from '@/types/ads';
 
 interface InterstitialAdModalProps {
@@ -37,12 +38,12 @@ export function InterstitialAdModal({
 }: InterstitialAdModalProps) {
   const [adConfig, setAdConfig] = useState<AdConfig>(DEFAULT_AD_CONFIG);
   const [currentAd, setCurrentAd] = useState<AdItem>(DEFAULT_ADS[0]);
-  const [countdown, setCountdown] = useState<number>(3);
-  const [canSkip, setCanSkip] = useState(false);
-  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+  const { guestId, userEmail } = useUserStore();
+  const [openedAt, setOpenedAt] = useState<number>(Date.now());
 
   useEffect(() => {
     if (isOpen) {
+      setOpenedAt(Date.now());
       fetchAdData();
     }
   }, [isOpen]);
@@ -76,8 +77,8 @@ export function InterstitialAdModal({
         setCountdown(delay);
         setCanSkip(isSkippable && delay <= 0);
 
-        // Record Impression
-        recordAdImpression(selected.id);
+        // Record Impression with rich telemetry
+        recordAdImpression(selected);
       }
     } catch {
       setCountdown(3);
@@ -104,24 +105,65 @@ export function InterstitialAdModal({
     }
   }, [isOpen, countdown, currentAd]);
 
-  const recordAdImpression = (adId: string) => {
+  const recordAdImpression = (ad: AdItem) => {
+    const pageUrl = typeof window !== 'undefined' ? window.location.pathname : '/';
     try {
       fetch('/api/ads', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ad_id: adId, action: 'impression' }),
+        body: JSON.stringify({ ad_id: ad.id, action: 'impression' }),
       }).catch(() => {});
-      analytics.adImpression(adId, placement);
+
+      fetch('/api/ads/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ad_id: ad.id,
+          ad_title: ad.title,
+          event_type: 'impression',
+          placement,
+          display_type: ad.display_type || adConfig.default_display_type || 'popup',
+          page_url: pageUrl,
+          user_id: userEmail || null,
+          guest_id: guestId || null,
+          target_url: ad.target_url,
+          cta_text: ad.cta_text,
+        }),
+      }).catch(() => {});
+
+      analytics.adImpression(ad.id, placement);
     } catch {}
   };
 
   const handleAdClick = () => {
+    const pageUrl = typeof window !== 'undefined' ? window.location.pathname : '/';
+    const dwellSeconds = Math.round((Date.now() - openedAt) / 1000);
+
     try {
       fetch('/api/ads', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ad_id: currentAd.id, action: 'click' }),
       }).catch(() => {});
+
+      fetch('/api/ads/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ad_id: currentAd.id,
+          ad_title: currentAd.title,
+          event_type: 'click',
+          placement,
+          display_type: currentAd.display_type || 'popup',
+          page_url: pageUrl,
+          user_id: userEmail || null,
+          guest_id: guestId || null,
+          duration_watched_seconds: dwellSeconds,
+          target_url: currentAd.target_url,
+          cta_text: currentAd.cta_text,
+        }),
+      }).catch(() => {});
+
       analytics.adClick(currentAd.id, placement);
     } catch {}
 
@@ -133,6 +175,27 @@ export function InterstitialAdModal({
   };
 
   const handleSkipAd = () => {
+    const pageUrl = typeof window !== 'undefined' ? window.location.pathname : '/';
+    const dwellSeconds = Math.round((Date.now() - openedAt) / 1000);
+
+    try {
+      fetch('/api/ads/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ad_id: currentAd.id,
+          ad_title: currentAd.title,
+          event_type: 'skip',
+          placement,
+          display_type: currentAd.display_type || 'popup',
+          page_url: pageUrl,
+          user_id: userEmail || null,
+          guest_id: guestId || null,
+          duration_watched_seconds: dwellSeconds,
+        }),
+      }).catch(() => {});
+    } catch {}
+
     soundManager.play('pass');
     onClose();
     if (onAdFinished) onAdFinished();

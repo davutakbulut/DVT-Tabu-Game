@@ -371,6 +371,9 @@ export default function AdminPortalPage() {
     }
   };
 
+  const [adEventsData, setAdEventsData] = useState<any>(null);
+  const [loadingAdEvents, setLoadingAdEvents] = useState(false);
+
   const fetchAdsData = () => {
     fetch('/api/ads')
       .then((res) => res.json())
@@ -379,6 +382,13 @@ export default function AdminPortalPage() {
         if (res.ads && res.ads.length > 0) setAdsList(res.ads);
       })
       .catch(() => {});
+
+    setLoadingAdEvents(true);
+    fetch('/api/ads/events?limit=150')
+      .then((res) => res.json())
+      .then((data) => setAdEventsData(data))
+      .catch(() => {})
+      .finally(() => setLoadingAdEvents(false));
   };
 
   const handleSaveAdConfig = async () => {
@@ -2268,6 +2278,132 @@ export default function AdminPortalPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Section 3: Sayfa Bazında Reklam Tıklama & Gösterim Analitiği */}
+          <div className="flex flex-col gap-3 pt-4 border-t border-slate-800/80">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-emerald-400" /> Sayfa Bazında Tıklama & Gösterim Analitiği
+                </h3>
+                <span className="text-[10px] text-slate-400">
+                  Hangi sayfalarda reklamların ne kadar görüntülendiği, tıklandığı ve CTR performansı
+                </span>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchAdsData}
+                disabled={loadingAdEvents}
+                className="text-xs py-1.5 px-3 bg-slate-900 border-slate-800"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 mr-1 ${loadingAdEvents ? 'animate-spin' : ''}`} /> Yenile
+              </Button>
+            </div>
+
+            {/* Page Breakdown Table */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/80 overflow-hidden shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-950/80 text-[10px] uppercase font-mono text-slate-400 border-b border-slate-800">
+                    <tr>
+                      <th className="py-2.5 px-4">Sayfa URL</th>
+                      <th className="py-2.5 px-4 text-center">Toplam Gösterim</th>
+                      <th className="py-2.5 px-4 text-center">Toplam Tıklama</th>
+                      <th className="py-2.5 px-4 text-center">Geçilme (Skip)</th>
+                      <th className="py-2.5 px-4 text-right">Dönüşüm Oranı (CTR)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 font-mono">
+                    {adEventsData?.page_stats && Object.keys(adEventsData.page_stats).length > 0 ? (
+                      Object.entries(adEventsData.page_stats).map(([page, stat]: [string, any]) => (
+                        <tr key={page} className="hover:bg-slate-850/50 transition-colors">
+                          <td className="py-2.5 px-4 font-bold text-white flex items-center gap-1.5">
+                            <span className="text-indigo-400">📄</span> {page}
+                          </td>
+                          <td className="py-2.5 px-4 text-center text-slate-300 font-bold">{stat.impressions}</td>
+                          <td className="py-2.5 px-4 text-center text-emerald-400 font-bold">{stat.clicks}</td>
+                          <td className="py-2.5 px-4 text-center text-amber-400">{stat.skips}</td>
+                          <td className="py-2.5 px-4 text-right">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                              stat.ctr >= 15 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'
+                            }`}>
+                              %{stat.ctr}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="py-6 text-center text-slate-500 text-xs">
+                          Henüz kayıtlı sayfa bazlı reklam telemetrisi bulunmuyor.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Canlı Reklam Etkinlik & Tıklama Günlüğü */}
+          <div className="flex flex-col gap-3 pt-4 border-t border-slate-800/80">
+            <div>
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-400" /> Canlı Reklam Etkinlik & Tıklama Günlüğü (Son {adEventsData?.events?.length || 0} Olay)
+              </h3>
+              <span className="text-[10px] text-slate-400">
+                Kullanıcıların hangi saniyede reklamı geçtiği, tıkladığı ve izlediği tüm telemetri kayıtları
+              </span>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/80 overflow-hidden shadow-xl max-h-80 overflow-y-auto">
+              <div className="divide-y divide-slate-800/60 font-mono text-xs">
+                {adEventsData?.events && adEventsData.events.length > 0 ? (
+                  adEventsData.events.map((ev: any) => (
+                    <div key={ev.id} className="p-3 hover:bg-slate-850/50 transition-colors flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md border shrink-0 ${
+                          ev.event_type === 'click'
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse'
+                            : ev.event_type === 'skip'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                        }`}>
+                          {ev.event_type === 'click' ? 'TIKLAMA' : ev.event_type === 'skip' ? 'GEÇİLDİ' : 'GÖSTERİM'}
+                        </span>
+
+                        <div className="min-w-0">
+                          <span className="text-white font-bold truncate block">{ev.ad_title || ev.ad_id}</span>
+                          <span className="text-[10px] text-slate-400 flex items-center gap-2">
+                            <span>Sayfa: <strong className="text-indigo-300">{ev.page_url}</strong></span>
+                            <span>•</span>
+                            <span>Format: <strong className="text-slate-300">{ev.display_type}</strong></span>
+                            {ev.duration_watched_seconds > 0 && (
+                              <>
+                                <span>•</span>
+                                <span>İzlenme: <strong className="text-amber-300">{ev.duration_watched_seconds}s</strong></span>
+                              </>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] text-slate-400 block">{new Date(ev.created_at).toLocaleTimeString('tr-TR')}</span>
+                        <span className="text-[9px] text-slate-500 truncate max-w-[100px] block">{ev.user_id || ev.guest_id || 'Misafir'}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-6 text-center text-slate-500 text-xs">
+                    Henüz kayıtlı reklam etkinliği bulunmuyor.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
