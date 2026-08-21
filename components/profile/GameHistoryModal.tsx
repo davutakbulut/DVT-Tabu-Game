@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { useUserStore } from '@/stores/userStore';
+
 interface GameHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -23,7 +25,8 @@ interface GameHistoryModalProps {
   userId?: string;
 }
 
-export function GameHistoryModal({ isOpen, onClose, guestId, userId }: GameHistoryModalProps) {
+export function GameHistoryModal({ isOpen, onClose, guestId: propGuestId, userId: propUserId }: GameHistoryModalProps) {
+  const { userId: storeUserId, userEmail, isLoggedIn } = useUserStore();
   const [games, setGames] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -31,15 +34,20 @@ export function GameHistoryModal({ isOpen, onClose, guestId, userId }: GameHisto
     if (isOpen) {
       fetchHistory();
     }
-  }, [isOpen, guestId, userId]);
+  }, [isOpen, propGuestId, propUserId, storeUserId, userEmail]);
 
   const fetchHistory = async () => {
     setLoading(true);
     try {
-      const gId = guestId || (typeof window !== 'undefined' ? localStorage.getItem('dvt_tabu_guest_id') : null);
+      const activeUserId = propUserId || (isLoggedIn ? userEmail : null);
+      const activeGuestId = propGuestId || storeUserId || (typeof window !== 'undefined' ? (localStorage.getItem('dvt_user_id') || localStorage.getItem('dvt_tabu_guest_id')) : null);
+
       const params = new URLSearchParams();
-      if (userId) params.set('userId', userId);
-      else if (gId) params.set('guestId', gId);
+      if (activeUserId) {
+        params.set('userId', activeUserId);
+      } else if (activeGuestId) {
+        params.set('guestId', activeGuestId);
+      }
       params.set('limit', '30');
 
       const res = await fetch(`/api/games?${params.toString()}`);
