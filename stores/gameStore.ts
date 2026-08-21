@@ -14,7 +14,8 @@ interface GameStoreState {
   gameMode: 'single_device' | 'multiplayer';
   
   // Actions
-  initializeGame: (teams: Team[], customSettings?: Partial<GameSettings>, customCards?: Card[]) => void;
+  initializeGame: (teams: Team[], customSettings?: Partial<GameSettings>, customCards?: Card[]) => Promise<void>;
+  fetchLiveCards: () => Promise<Card[]>;
   startTurn: () => void;
   recordCorrect: () => void;
   recordPass: () => void;
@@ -64,10 +65,29 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     }));
   },
 
-  initializeGame: (teams, customSettings, customCards) => {
+  fetchLiveCards: async () => {
+    try {
+      const res = await fetch('/api/cards?activeOnly=true&limit=250');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.cards && json.cards.length > 0) {
+          return json.cards;
+        }
+      }
+    } catch {}
+    return INITIAL_CARDS;
+  },
+
+  initializeGame: async (teams, customSettings, customCards) => {
     const settings = { ...DEFAULT_GAME_SETTINGS, ...(customSettings || {}) };
-    const allCards = customCards && customCards.length > 0 ? customCards : INITIAL_CARDS;
-    const pool = filterCards(allCards, settings);
+    let baseCards = customCards && customCards.length > 0 ? customCards : INITIAL_CARDS;
+
+    // Fetch live active cards from Supabase if no custom cards provided
+    if (!customCards || customCards.length === 0) {
+      baseCards = await get().fetchLiveCards();
+    }
+
+    const pool = filterCards(baseCards, settings);
     const firstCard = getNextCard(pool, []);
 
     set({
@@ -98,7 +118,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   startTurn: () => {
     const { cardPool, gameState, settings } = get();
     const nextCard = getNextCard(cardPool, gameState.cards_used_ids);
-
+    
     set((state) => ({
       gameState: {
         ...state.gameState,
@@ -112,109 +132,131 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         turn_tabu_count: 0,
         buzzer_locked_by: null,
         cards_used_ids: [...state.gameState.cards_used_ids, nextCard.id],
+        turn_history: [],
       }
     }));
   },
 
   recordCorrect: () => {
-    const { gameState, teams, cardPool, settings } = get();
-    if (gameState.status !== 'in_progress') return;
+    const { gameState, cardPool, teams, isGoldenRound } = get();
+    if (gameState.status !== 'in_progress' || !gameState.current_card) return;
 
     soundManager.playCorrect();
     triggerHaptic('correct');
 
+    const pointMultiplier = isGoldenRound ? 2 : 1;
     const activeTeamId = gameState.active_team_id;
-    const updatedTeams = teams.map(t => 
-      t.id === activeTeamId ? { ...t, score: t.score + settings.correct_points } : t
+
+    const updatedTeams = teams.map((team) =>
+      team.id === activeTeamId ? { ...team, score: team.score + pointMultiplier } : team
     );
 
-    const turnItem: GameTurn = {
-      round_number: gameState.current_round,
-      team_id: activeTeamId,
-      card_id: gameState.current_card?.id,
+    const newHistory: GameTurn = {
+      card: gameState.current_card,
       action: 'correct',
-      points: settings.correct_points,
+      timestamp: Date.now(),
+      score_change: pointMultiplier,
+      performed_by_team: activeTeamId,
     };
 
     const nextCard = getNextCard(cardPool, gameState.cards_used_ids);
 
-    set({
+    set((state) => ({
       teams: updatedTeams,
       gameState: {
-        ...gameState,
-        turn_correct_count: gameState.turn_correct_count + 1,
+        ...state.gameState,
+        turn_correct_count: state.gameState.turn_correct_count + 1,
         current_card: nextCard,
-        cards_used_ids: [...gameState.cards_used_ids, nextCard.id],
-        turn_history: [...gameState.turn_history, turnItem],
+        cards_used_ids: [...state.gameState.cards_used_ids, nextCard.id],
+        turn_history: [...state.gameState.turn_history, newHistory],
       }
-    });
+    }));
   },
 
   recordPass: () => {
-    const { gameState, cardPool } = get();
-    if (gameState.status !== 'in_progress' || (gameState.remaining_passes <= 0 && gameState.remaining_passes < 99)) return;
+    const { gameState, cardPool, settings } = get();
+    if (gameState.status !== 'in_progress' || !gameState.current_card) return;
+
+    if (settings.pass_limit > 0 && gameState.remaining_passes <= 0) {
+      soundManager.playBuzzer();
+      triggerHaptic('buzzer');
+      return;
+    }
 
     soundManager.playPass();
     triggerHaptic('pass');
 
-    const turnItem: GameTurn = {
-      round_number: gameState.current_round,
-      team_id: gameState.active_team_id,
-      card_id: gameState.current_card?.id,
+    const activeTeamId = gameState.active_team_id;
+    const newHistory: GameTurn = {
+      card: gameState.current_card,
       action: 'pass',
-      points: 0,
+      timestamp: Date.now(),
+      score_change: 0,
+      performed_by_team: activeTeamId,
     };
 
     const nextCard = getNextCard(cardPool, gameState.cards_used_ids);
 
-    set({
+    set((state) => ({
       gameState: {
-        ...gameState,
-        remaining_passes: gameState.remaining_passes >= 99 ? gameState.remaining_passes : gameState.remaining_passes - 1,
-        turn_pass_count: gameState.turn_pass_count + 1,
+        ...state.gameState,
+        remaining_passes: state.gameState.remaining_passes - 1,
+        turn_pass_count: state.gameState.turn_pass_count + 1,
         current_card: nextCard,
-        cards_used_ids: [...gameState.cards_used_ids, nextCard.id],
-        turn_history: [...gameState.turn_history, turnItem],
+        cards_used_ids: [...state.gameState.cards_used_ids, nextCard.id],
+        turn_history: [...state.gameState.turn_history, newHistory],
       }
-    });
+    }));
   },
 
   recordBuzzer: (rivalPlayerName, rivalTeamId) => {
-    const { gameState, teams, cardPool, settings } = get();
-    if (gameState.status !== 'in_progress') return;
-    if (settings.tabu_limit > 0 && gameState.remaining_tabus <= 0) return;
+    const { gameState, cardPool, teams, settings } = get();
+    if (gameState.status !== 'in_progress' || !gameState.current_card) return;
+
+    // Check tabu limit if configured
+    if (settings.tabu_limit > 0 && gameState.remaining_tabus <= 0) {
+      return;
+    }
 
     soundManager.playBuzzer();
     triggerHaptic('buzzer');
 
+    const penalty = settings.tabu_penalty_points || Math.abs(settings.buzzer_penalty) || 1;
     const activeTeamId = gameState.active_team_id;
-    const penalty = settings.buzzer_penalty; // e.g. -1
 
-    const updatedTeams = teams.map(t => 
-      t.id === activeTeamId ? { ...t, score: Math.max(0, t.score + penalty) } : t
+    const updatedTeams = teams.map((team) =>
+      team.id === activeTeamId ? { ...team, score: team.score - penalty } : team
     );
 
-    const turnItem: GameTurn = {
-      round_number: gameState.current_round,
-      team_id: activeTeamId,
-      card_id: gameState.current_card?.id,
-      action: 'buzzer',
-      points: penalty,
+    const newHistory: GameTurn = {
+      card: gameState.current_card,
+      action: 'tabu',
+      timestamp: Date.now(),
+      score_change: -penalty,
+      performed_by_team: activeTeamId,
+      buzzer_pressed_by: rivalPlayerName,
     };
 
     const nextCard = getNextCard(cardPool, gameState.cards_used_ids);
 
-    set({
+    set((state) => ({
       teams: updatedTeams,
       gameState: {
-        ...gameState,
-        remaining_tabus: settings.tabu_limit > 0 ? gameState.remaining_tabus - 1 : gameState.remaining_tabus,
-        turn_tabu_count: gameState.turn_tabu_count + 1,
+        ...state.gameState,
+        turn_tabu_count: state.gameState.turn_tabu_count + 1,
+        remaining_tabus: Math.max(0, state.gameState.remaining_tabus - 1),
+        buzzer_locked_by: rivalPlayerName || 'Rakip',
         current_card: nextCard,
-        cards_used_ids: [...gameState.cards_used_ids, nextCard.id],
-        turn_history: [...gameState.turn_history, turnItem],
+        cards_used_ids: [...state.gameState.cards_used_ids, nextCard.id],
+        turn_history: [...state.gameState.turn_history, newHistory],
       }
-    });
+    }));
+
+    setTimeout(() => {
+      set((state) => ({
+        gameState: { ...state.gameState, buzzer_locked_by: null }
+      }));
+    }, 1200);
   },
 
   recordTimeout: () => {
@@ -224,86 +266,80 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     soundManager.playBuzzer();
     triggerHaptic('buzzer');
 
-    const turnItem: GameTurn = {
-      round_number: gameState.current_round,
-      team_id: gameState.active_team_id,
-      card_id: gameState.current_card?.id,
-      action: 'timeout',
-      points: 0,
-    };
-
-    set({
+    set((state) => ({
       gameState: {
-        ...gameState,
+        ...state.gameState,
         status: 'turn_break',
-        buzzer_locked_by: null,
-        turn_history: [...gameState.turn_history, turnItem],
+        time_remaining: 0,
       }
-    });
+    }));
   },
 
   endTurnAndNext: () => {
     const { gameState, teams, settings } = get();
-    const nextIndex = calculateNextTeamIndex(gameState.active_team_index, teams.length);
-    const isRoundAdvance = nextIndex === 0;
-    const nextRound = isRoundAdvance ? gameState.current_round + 1 : gameState.current_round;
+    const nextTeamIndex = calculateNextTeamIndex(gameState.active_team_index, teams.length);
+    const nextRound = nextTeamIndex === 0 ? gameState.current_round + 1 : gameState.current_round;
 
-    const { isEnded, isTie } = checkGameEnd(nextRound, settings.total_rounds, teams, settings.target_score);
+    const gameEndResult = checkGameEnd(
+      nextRound,
+      settings.total_rounds,
+      teams,
+      settings.target_score || settings.winning_score
+    );
 
-    if (isEnded && !isTie) {
+    if (gameEndResult.isEnded) {
       soundManager.playFanfare();
-      set({
+      set((state) => ({
         gameState: {
-          ...gameState,
+          ...state.gameState,
           status: 'finished',
         }
-      });
+      }));
       return;
     }
 
-    if (isTie) {
-      set({
-        isGoldenRound: true,
-        gameState: {
-          ...gameState,
-          status: 'turn_break',
-          total_rounds: gameState.total_rounds + 1,
-          current_round: nextRound,
-          active_team_index: nextIndex,
-          active_team_id: teams[nextIndex].id,
-          time_remaining: settings.turn_duration,
-          remaining_passes: settings.pass_limit,
-          remaining_tabus: settings.tabu_limit > 0 ? settings.tabu_limit : 999,
-          turn_correct_count: 0,
-          turn_pass_count: 0,
-          turn_tabu_count: 0,
-          buzzer_locked_by: null,
-        }
-      });
-      return;
-    }
+    const isGolden = settings.golden_round_enabled && nextRound === settings.total_rounds;
 
-    set({
+    set((state) => ({
+      isGoldenRound: isGolden,
       gameState: {
-        ...gameState,
+        ...state.gameState,
         status: 'starting',
         current_round: nextRound,
-        active_team_index: nextIndex,
-        active_team_id: teams[nextIndex].id,
+        active_team_index: nextTeamIndex,
+        active_team_id: teams[nextTeamIndex]?.id || 'team-1',
         time_remaining: settings.turn_duration,
         remaining_passes: settings.pass_limit,
         remaining_tabus: settings.tabu_limit > 0 ? settings.tabu_limit : 999,
         turn_correct_count: 0,
         turn_pass_count: 0,
         turn_tabu_count: 0,
-        buzzer_locked_by: null,
       }
-    });
+    }));
   },
 
   resetGame: () => {
-    const { teams, settings } = get();
-    get().initializeGame(teams, settings);
+    set((state) => ({
+      isGoldenRound: false,
+      teams: state.teams.map((t) => ({ ...t, score: 0 })),
+      gameState: {
+        status: 'idle',
+        current_round: 1,
+        total_rounds: state.settings.total_rounds,
+        active_team_index: 0,
+        active_team_id: state.teams[0]?.id || 'team-1',
+        current_card: null,
+        time_remaining: state.settings.turn_duration,
+        remaining_passes: state.settings.pass_limit,
+        remaining_tabus: state.settings.tabu_limit > 0 ? state.settings.tabu_limit : 999,
+        turn_correct_count: 0,
+        turn_pass_count: 0,
+        turn_tabu_count: 0,
+        buzzer_locked_by: null,
+        cards_used_ids: [],
+        turn_history: [],
+      }
+    }));
   },
 
   syncRemoteState: (partialState) => {

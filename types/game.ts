@@ -48,8 +48,11 @@ export interface GameSettings {
   pass_limit: number; // 0 - 10, or 999 for unlimited
   tabu_limit: number; // 0 for unlimited, or 1, 2, 3, 5 max tabus per turn
   buzzer_penalty: number; // -1, -2, 0
+  tabu_penalty_points?: number;
   correct_points: number; // 1, 2
   target_score?: number | null;
+  winning_score?: number | null;
+  golden_round_enabled?: boolean;
   categories: (Category | string)[];
   difficulty: Difficulty | 'Tümü';
   deck_id?: string | null;
@@ -70,13 +73,17 @@ export interface Room {
 
 export interface GameTurn {
   id?: string;
-  round_number: number;
-  team_id: string;
+  round_number?: number;
+  team_id?: string;
   player_id?: string;
   card_id?: string;
-  action: 'correct' | 'pass' | 'buzzer' | 'timeout';
-  points: number;
-  timestamp?: string;
+  card?: Card | null;
+  action: 'correct' | 'pass' | 'buzzer' | 'tabu' | 'timeout';
+  points?: number;
+  score_change?: number;
+  performed_by_team?: string;
+  buzzer_pressed_by?: string;
+  timestamp?: string | number;
 }
 
 export interface ActiveGameState {
@@ -98,7 +105,7 @@ export interface ActiveGameState {
     player_id: string;
     player_name: string;
     team_id: string;
-  } | null;
+  } | string | null;
   cards_used_ids: string[];
   turn_history: GameTurn[];
 }

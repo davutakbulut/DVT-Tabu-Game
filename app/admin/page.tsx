@@ -35,7 +35,20 @@ import {
   Zap,
   Tag,
   Flame,
-  Check
+  Check,
+  Search,
+  Trash2,
+  Edit3,
+  ToggleLeft,
+  ToggleRight,
+  UploadCloud,
+  Film,
+  Trophy,
+  Cpu,
+  Utensils,
+  History,
+  Globe,
+  X
 } from 'lucide-react';
 
 export default function AdminPortalPage() {
@@ -49,7 +62,7 @@ export default function AdminPortalPage() {
   const [pinError, setPinError] = useState(false);
 
   // Active Tab: 'analytics' | 'versions' | 'monetization' | 'cards' | 'onboarding'
-  const [activeTab, setActiveTab] = useState<'analytics' | 'versions' | 'monetization' | 'cards' | 'onboarding'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'monetization' | 'versions' | 'cards' | 'onboarding'>('cards');
 
   // Analytics Data
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -77,11 +90,36 @@ export default function AdminPortalPage() {
   const [publishingVersion, setPublishingVersion] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
 
-  // Card CMS Form
+  // Decks & Cards CMS State
+  const [cmsSubTab, setCmsSubTab] = useState<'decks' | 'cards' | 'add_card' | 'bulk_import'>('decks');
+  const [decks, setDecks] = useState<any[]>([]);
+  const [cards, setCards] = useState<any[]>([]);
+  const [loadingCards, setLoadingCards] = useState(false);
+  const [searchCardQuery, setSearchCardQuery] = useState('');
+  const [selectedDeckFilter, setSelectedDeckFilter] = useState('all');
+
+  // New Deck Form
+  const [newDeckName, setNewDeckName] = useState('');
+  const [newDeckDesc, setNewDeckDesc] = useState('');
+  const [newDeckColor, setNewDeckColor] = useState('#6366f1');
+  const [isNewDeckOpen, setIsNewDeckOpen] = useState(false);
+
+  // Single Card Form
   const [newMainWord, setNewMainWord] = useState('');
   const [newForbiddenWords, setNewForbiddenWords] = useState('');
+  const [newCardDeckId, setNewCardDeckId] = useState('deck-general');
   const [newCardCategory, setNewCardCategory] = useState('Genel Kültür');
+  const [newCardDifficulty, setNewCardDifficulty] = useState('Orta');
   const [cardSaveStatus, setCardSaveStatus] = useState<string | null>(null);
+
+  // Bulk Import Form
+  const [bulkDeckId, setBulkDeckId] = useState('deck-general');
+  const [bulkText, setBulkText] = useState(`FUTBOL: TOP, GOL, MAÇ, SAHA, HAKEM\nTİYATRO: SAHNE, OYUN, PERDE, ALKIŞ, AKTÖR\nKAHVE: ÇEKİRDEK, ESPRESSO, KAFEİN, FİNCAN, SÜT`);
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [bulkSuccessMsg, setBulkSuccessMsg] = useState<string | null>(null);
+
+  // Edit Card Modal
+  const [editingCard, setEditingCard] = useState<any | null>(null);
 
   // Previews
   const [isTestPaywallOpen, setIsTestPaywallOpen] = useState(false);
@@ -106,12 +144,46 @@ export default function AdminPortalPage() {
       .catch(() => {});
   };
 
+  const fetchDecks = async () => {
+    try {
+      const res = await fetch('/api/decks');
+      if (res.ok) {
+        const json = await res.json();
+        setDecks(json.decks || []);
+      }
+    } catch {}
+  };
+
+  const fetchCards = async () => {
+    setLoadingCards(true);
+    try {
+      let url = `/api/cards?limit=150`;
+      if (selectedDeckFilter !== 'all') url += `&deckId=${selectedDeckFilter}`;
+      if (searchCardQuery) url += `&search=${encodeURIComponent(searchCardQuery)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = await res.json();
+        setCards(json.cards || []);
+      }
+    } catch {} finally {
+      setLoadingCards(false);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchMetrics();
       fetchStrategyConfig();
+      fetchDecks();
+      fetchCards();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && (cmsSubTab === 'cards' || cmsSubTab === 'decks')) {
+      fetchCards();
+    }
+  }, [selectedDeckFilter, searchCardQuery, cmsSubTab]);
 
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,6 +258,72 @@ export default function AdminPortalPage() {
     }
   };
 
+  // Toggle Deck Active Status
+  const handleToggleDeck = async (deckId: string, currentStatus: boolean) => {
+    try {
+      await fetch('/api/decks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: deckId, is_active: !currentStatus }),
+      });
+      setDecks((prev) =>
+        prev.map((d) => (d.id === deckId ? { ...d, is_active: !currentStatus } : d))
+      );
+    } catch {
+      alert('Deste durumu güncellenemedi');
+    }
+  };
+
+  // Create New Deck
+  const handleCreateDeck = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDeckName) return;
+    try {
+      const res = await fetch('/api/decks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newDeckName,
+          description: newDeckDesc,
+          color: newDeckColor,
+          icon: 'Layers',
+          is_active: true,
+        }),
+      });
+      if (res.ok) {
+        setNewDeckName('');
+        setNewDeckDesc('');
+        setIsNewDeckOpen(false);
+        fetchDecks();
+      }
+    } catch {}
+  };
+
+  // Toggle Card Active Status
+  const handleToggleCard = async (cardId: string, currentStatus: boolean) => {
+    try {
+      await fetch('/api/cards', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: cardId, is_active: !currentStatus }),
+      });
+      setCards((prev) =>
+        prev.map((c) => (c.id === cardId ? { ...c, is_active: !currentStatus } : c))
+      );
+    } catch {}
+  };
+
+  // Delete Card
+  const handleDeleteCard = async (cardId: string) => {
+    if (!confirm('Bu kartı kelime havuzundan silmek istediğinize emin misiniz?')) return;
+    try {
+      await fetch(`/api/cards?id=${cardId}`, { method: 'DELETE' });
+      setCards((prev) => prev.filter((c) => c.id !== cardId));
+      fetchDecks();
+    } catch {}
+  };
+
+  // Save Single Card
   const handleSaveCard = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMainWord || !newForbiddenWords) return;
@@ -203,20 +341,94 @@ export default function AdminPortalPage() {
         body: JSON.stringify({
           main_word: newMainWord.toUpperCase(),
           forbidden_words: words.slice(0, 5),
+          deck_id: newCardDeckId,
           category: newCardCategory,
-          difficulty: 'Orta',
+          difficulty: newCardDifficulty,
         }),
       });
 
       if (res.ok) {
-        setCardSaveStatus(`✓ "${newMainWord.toUpperCase()}" kartı veritabanına eklendi!`);
+        setCardSaveStatus(`✓ "${newMainWord.toUpperCase()}" kartı eklendi!`);
         setNewMainWord('');
         setNewForbiddenWords('');
+        fetchDecks();
+        fetchCards();
         setTimeout(() => setCardSaveStatus(null), 3000);
       }
     } catch {
       alert('Kart kaydedilemedi.');
     }
+  };
+
+  // Bulk Import Cards
+  const handleBulkImport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bulkText.trim()) return;
+
+    setBulkImporting(true);
+    setBulkSuccessMsg(null);
+
+    const lines = bulkText.split('\n').map((l) => l.trim()).filter(Boolean);
+    const parsedCards: any[] = [];
+
+    lines.forEach((line) => {
+      // Expecting: MAIN_WORD: FORBIDDEN1, FORBIDDEN2, FORBIDDEN3, FORBIDDEN4, FORBIDDEN5
+      if (line.includes(':')) {
+        const [main, forbiddenPart] = line.split(':');
+        const taboos = forbiddenPart.split(',').map((t) => t.trim().toUpperCase()).filter(Boolean);
+        if (main && taboos.length >= 5) {
+          parsedCards.push({
+            main_word: main.trim().toUpperCase(),
+            forbidden_words: taboos.slice(0, 5),
+            deck_id: bulkDeckId,
+          });
+        }
+      }
+    });
+
+    if (parsedCards.length === 0) {
+      alert('Geçerli kart formatı bulunamadı. Lütfen her satıra "KELİME: yasak1, yasak2, yasak3, yasak4, yasak5" şeklinde yazın.');
+      setBulkImporting(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/cards/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cards: parsedCards, deck_id: bulkDeckId }),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        setBulkSuccessMsg(`🎉 ${json.count || parsedCards.length} adet kart desteye başarıyla yüklendi!`);
+        setBulkText('');
+        fetchDecks();
+        fetchCards();
+      }
+    } catch {
+      alert('Toplu yükleme başarısız oldu.');
+    } finally {
+      setBulkImporting(false);
+    }
+  };
+
+  // Update Editing Card
+  const handleUpdateEditingCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCard) return;
+
+    try {
+      const res = await fetch('/api/cards', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingCard),
+      });
+      if (res.ok) {
+        setCards((prev) => prev.map((c) => (c.id === editingCard.id ? editingCard : c)));
+        setEditingCard(null);
+      }
+    } catch {}
   };
 
   const summary = analyticsData?.summary || {
@@ -304,7 +516,7 @@ export default function AdminPortalPage() {
               DVT Tabu Yönetim Merkezi
             </h1>
             <span className="text-[11px] text-slate-400">
-              Canlı Sistem, Sürüm, Kart CMS & Analitik Kontrolü
+              Canlı Sistem, Desteler, Kelime Havuzu CMS & Analitik Kontrolü
             </span>
           </div>
         </div>
@@ -329,10 +541,10 @@ export default function AdminPortalPage() {
       {/* Admin Navigation Tabs */}
       <nav className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-900">
         {[
-          { id: 'analytics', label: 'Analitik & Drop-off', icon: <BarChart3 className="w-4 h-4" /> },
+          { id: 'cards', label: 'Kart & Deste Havuzu (CMS)', icon: <Layers className="w-4 h-4" /> },
           { id: 'monetization', label: 'Monetizasyon & Paywall', icon: <Crown className="w-4 h-4" /> },
+          { id: 'analytics', label: 'Analitik & Drop-off', icon: <BarChart3 className="w-4 h-4" /> },
           { id: 'versions', label: 'Sürüm & Dağıtım', icon: <ArrowUpCircle className="w-4 h-4" /> },
-          { id: 'cards', label: 'Kart Havuzu (CMS)', icon: <Layers className="w-4 h-4" /> },
           { id: 'onboarding', label: 'Onboarding Akışı', icon: <Compass className="w-4 h-4" /> },
         ].map((tab) => (
           <button
@@ -350,106 +562,330 @@ export default function AdminPortalPage() {
         ))}
       </nav>
 
-      {/* TAB 1: ANALYTICS & SCREEN ENGAGEMENT */}
-      {activeTab === 'analytics' && (
+      {/* TAB: CARDS & DECKS CMS */}
+      {activeTab === 'cards' && (
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-              <Activity className="w-4 h-4 text-indigo-400" /> Kullanıcı Akışı & Drop-off Metrikleri
-            </h2>
-            <Button variant="outline" size="sm" onClick={fetchMetrics} disabled={loadingMetrics} className="text-xs">
-              <RotateCcw className={`w-3.5 h-3.5 mr-1 ${loadingMetrics ? 'animate-spin' : ''}`} /> Yenile
-            </Button>
+          {/* Sub-Tabs */}
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div className="flex items-center gap-1.5">
+              {[
+                { id: 'decks', label: '📁 Desteler & Kategoriler' },
+                { id: 'cards', label: '🗂️ Kelime Havuzu & Arama' },
+                { id: 'add_card', label: '➕ Tekil Kart Ekle' },
+                { id: 'bulk_import', label: '⚡ Toplu İçe Aktar' },
+              ].map((sub) => (
+                <button
+                  key={sub.id}
+                  onClick={() => setCmsSubTab(sub.id as any)}
+                  className={`py-1.5 px-3 rounded-xl text-xs font-black transition-all ${
+                    cmsSubTab === sub.id
+                      ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {sub.label}
+                </button>
+              ))}
+            </div>
+
+            {cmsSubTab === 'decks' && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsNewDeckOpen(true)}
+                className="text-xs py-1 px-2.5"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Yeni Deste Oluştur
+              </Button>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-400">Tekil Oturum</span>
-              <span className="text-2xl font-black text-white font-mono">{summary.uniqueSessions}</span>
-              <span className="text-[10px] text-emerald-400 font-semibold">{summary.totalEvents} Toplam Olay</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-400">Onboarding Başarısı</span>
-              <span className="text-2xl font-black text-purple-300 font-mono">%{summary.onboardingRate}</span>
-              <span className="text-[10px] text-slate-400">{summary.onboardingCompletes} Tamamlandı</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-400">Drop-off / Terk</span>
-              <span className="text-2xl font-black text-amber-400 font-mono">%{summary.dropOffRate}</span>
-              <span className="text-[10px] text-slate-400">{summary.gamesAbandoned} Terk Edilen Maç</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-400">Paywall Dönüşümü</span>
-              <span className="text-2xl font-black text-emerald-400 font-mono">%{summary.paywallConversion}</span>
-              <span className="text-[10px] text-slate-400">{summary.paywallViews} Görüntüleme</span>
-            </div>
-          </div>
-
-          {/* ⏱️ Ekran Kalış Süreleri & Sağlık Isı Haritası */}
-          <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                <Clock className="w-4 h-4 text-cyan-400" /> Ekran Kalış Süreleri (Dwell Time) & Sağlık Dökümü
-              </h3>
-              <span className="text-[10px] text-slate-400">Kullanıcı Nerede Ne Kadar Kalıyor?</span>
-            </div>
-
+          {/* SUB-TAB 1: DECKS LIST */}
+          {cmsSubTab === 'decks' && (
             <div className="flex flex-col gap-3">
-              {Object.entries(pageIssues).map(([path, stats]: [string, any]) => {
-                const hasIssues = stats.errors > 0 || stats.abandons > 0;
-                const dwell = stats.avgDwellSeconds || 30;
-                const minutes = Math.floor(dwell / 60);
-                const seconds = dwell % 60;
-                const timeFormatted = minutes > 0 ? `${minutes}dk ${seconds}sn` : `${seconds}sn`;
-
-                return (
-                  <div key={path} className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/90 flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-white">{path}</span>
-                        <span className="text-[11px] text-slate-400">
-                          {path === '/' && '(Ana Sayfa)'}
-                          {path === '/play' && '(Oyun Arenası - En Yoğun 🔥)'}
-                          {path === '/room/[code]' && '(Oda Lobisi)'}
-                          {path === '/rooms' && '(Oda Keşfi)'}
-                          {path === '/summary' && '(Podyum & Özet)'}
-                        </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {decks.map((deck) => (
+                  <div
+                    key={deck.id}
+                    className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                      deck.is_active
+                        ? 'bg-slate-900/90 border-slate-800'
+                        : 'bg-slate-950/60 border-slate-900 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="w-10 h-10 rounded-2xl flex items-center justify-center font-black text-white shadow-md"
+                          style={{ backgroundColor: deck.color || '#6366f1' }}
+                        >
+                          <Layers className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-black text-white leading-snug">{deck.name}</h4>
+                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                            {deck.card_count || 0} Toplam Kart ({deck.active_card_count || 0} Aktif)
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-3 font-bold text-[11px]">
-                        <span className="text-cyan-300 font-mono flex items-center gap-1 bg-cyan-950/40 px-2.5 py-0.5 rounded-lg border border-cyan-500/20">
-                          <Clock className="w-3 h-3 text-cyan-400" /> Ort. {timeFormatted}
-                        </span>
-                        <span className="text-slate-400">{stats.views || 0} Ziyaret</span>
-                        {stats.abandons > 0 && <span className="text-amber-400">{stats.abandons} Terk</span>}
-                        {stats.errors > 0 && <span className="text-rose-400 font-black">{stats.errors} Hata!</span>}
-                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                          hasIssues ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                        }`}>
-                          {hasIssues ? 'İnceleme' : 'Stabil'}
-                        </span>
-                      </div>
+                      {/* Active/Passive Switch */}
+                      <button
+                        onClick={() => handleToggleDeck(deck.id, deck.is_active)}
+                        className={`text-xs font-black px-2.5 py-1 rounded-xl border transition-all flex items-center gap-1 ${
+                          deck.is_active
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}
+                      >
+                        {deck.is_active ? <Check className="w-3 h-3" /> : null}
+                        {deck.is_active ? 'Yayında' : 'Pasif'}
+                      </button>
                     </div>
 
-                    {/* Progress Bar Visualizing Relative Time */}
-                    <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400 rounded-full"
-                        style={{ width: `${Math.min(100, Math.max(10, (dwell / 180) * 100))}%` }}
-                      />
+                    <p className="text-xs text-slate-400 leading-snug">{deck.description}</p>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[10px]">
+                      <span className="text-slate-500 font-mono">ID: {deck.id}</span>
+                      <button
+                        onClick={() => {
+                          setSelectedDeckFilter(deck.id);
+                          setCmsSubTab('cards');
+                        }}
+                        className="text-indigo-400 hover:text-indigo-300 font-bold"
+                      >
+                        Kartları İncele & Düzenle ➔
+                      </button>
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* SUB-TAB 2: CARDS WORD POOL EXPLORER */}
+          {cmsSubTab === 'cards' && (
+            <div className="flex flex-col gap-3">
+              {/* Search & Filter Bar */}
+              <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={searchCardQuery}
+                    onChange={(e) => setSearchCardQuery(e.target.value)}
+                    placeholder="Kelime havuzunda ara (Örn: TİTANİK, KAHVE, ROBOT)..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <select
+                  value={selectedDeckFilter}
+                  onChange={(e) => setSelectedDeckFilter(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none"
+                >
+                  <option value="all">Tüm Desteler ({cards.length})</option>
+                  {decks.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+
+                <Button variant="outline" size="sm" onClick={fetchCards} disabled={loadingCards} className="text-xs">
+                  <RotateCcw className={`w-3.5 h-3.5 ${loadingCards ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+
+              {/* Card List Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {cards.map((card) => (
+                  <div
+                    key={card.id}
+                    className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-2.5 ${
+                      card.is_active !== false
+                        ? 'bg-slate-900 border-slate-800'
+                        : 'bg-slate-950/60 border-slate-900 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base font-black text-white tracking-wider">{card.main_word}</span>
+                        <span className="text-[9px] font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+                          {card.category || 'Genel'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleToggleCard(card.id, card.is_active !== false)}
+                          className={`p-1 rounded-lg text-xs font-bold ${
+                            card.is_active !== false ? 'text-emerald-400' : 'text-slate-500'
+                          }`}
+                          title={card.is_active !== false ? 'Aktif (Yayında)' : 'Pasif (Gizli)'}
+                        >
+                          {card.is_active !== false ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                        </button>
+                        <button
+                          onClick={() => setEditingCard(card)}
+                          className="p-1 text-slate-400 hover:text-white rounded-lg"
+                          title="Düzenle"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCard(card.id)}
+                          className="p-1 text-slate-500 hover:text-rose-400 rounded-lg"
+                          title="Sil"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Forbidden Words Pills */}
+                    <div className="flex flex-wrap gap-1">
+                      {(card.forbidden_words || []).map((w: string, i: number) => (
+                        <span key={i} className="text-[10px] font-bold bg-rose-950/30 text-rose-300 border border-rose-500/20 px-2 py-0.5 rounded-md">
+                          {w}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* SUB-TAB 3: ADD SINGLE CARD */}
+          {cmsSubTab === 'add_card' && (
+            <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 flex flex-col gap-4">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Plus className="w-4 h-4 text-indigo-400" /> Kelime Havuzuna Tekil Kart Ekle
+              </h3>
+
+              {cardSaveStatus && (
+                <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
+                  {cardSaveStatus}
+                </div>
+              )}
+
+              <form onSubmit={handleSaveCard} className="flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-1">Hedef Deste:</label>
+                    <select
+                      value={newCardDeckId}
+                      onChange={(e) => {
+                        setNewCardDeckId(e.target.value);
+                        const selectedDeck = decks.find((d) => d.id === e.target.value);
+                        if (selectedDeck) setNewCardCategory(selectedDeck.name);
+                      }}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none"
+                    >
+                      {decks.map((d) => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-1">Ana Kelime (Büyük Harf):</label>
+                    <input
+                      type="text"
+                      value={newMainWord}
+                      onChange={(e) => setNewMainWord(e.target.value)}
+                      placeholder="Örn: AKILLI SAAT"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-black text-white uppercase focus:outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">5 Yasaklı Kelime (Virgülle ayırın):</label>
+                  <input
+                    type="text"
+                    value={newForbiddenWords}
+                    onChange={(e) => setNewForbiddenWords(e.target.value)}
+                    placeholder="KOL, ZAMAN, APPLE, BİLDİRİM, ADIMSAYAR"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white uppercase focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <Button variant="primary" size="md" type="submit" className="text-xs py-3 font-black">
+                  <Plus className="w-4 h-4 mr-1" /> Kartı Veritabanına Ekle
+                </Button>
+              </form>
+            </div>
+          )}
+
+          {/* SUB-TAB 4: BULK IMPORT */}
+          {cmsSubTab === 'bulk_import' && (
+            <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-black text-indigo-300 uppercase tracking-wider flex items-center gap-2">
+                    <UploadCloud className="w-4 h-4 text-indigo-400" /> Toplu Kart İçe Aktarma (Bulk Import)
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Her satıra bir kart gelecek şekilde yapıştırın. Tek tıkla yüzlerce kartı desteye yükleyin.
+                  </p>
+                </div>
+              </div>
+
+              {bulkSuccessMsg && (
+                <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  {bulkSuccessMsg}
+                </div>
+              )}
+
+              <form onSubmit={handleBulkImport} className="flex flex-col gap-3">
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">Yüklenecek Hedef Deste:</label>
+                  <select
+                    value={bulkDeckId}
+                    onChange={(e) => setBulkDeckId(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none"
+                  >
+                    {decks.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">
+                    Kart Listesi Formatı: <code>ANA KELİME: YASAK1, YASAK2, YASAK3, YASAK4, YASAK5</code>
+                  </label>
+                  <textarea
+                    rows={6}
+                    value={bulkText}
+                    onChange={(e) => setBulkText(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-white focus:outline-none resize-none"
+                    placeholder="KELİME: yasak1, yasak2, yasak3, yasak4, yasak5"
+                  />
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="md"
+                  type="submit"
+                  disabled={bulkImporting}
+                  className="text-xs py-3 font-black bg-gradient-to-r from-indigo-600 to-purple-600"
+                >
+                  <UploadCloud className="w-4 h-4 mr-1.5" />
+                  {bulkImporting ? 'Yükleniyor...' : '⚡ Kartları Desteye Toplu Yükle'}
+                </Button>
+              </form>
+            </div>
+          )}
         </div>
       )}
 
-      {/* TAB 2: MONETIZATION, LIVE STRATEGY & TRIGGER BREAKDOWN */}
+      {/* TAB: MONETIZATION */}
       {activeTab === 'monetization' && (
         <div className="flex flex-col gap-4">
-          {/* 🎯 Paywall Tetikleme Noktaları Başarı & Tıklama Tablosu */}
           <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
@@ -494,7 +930,6 @@ export default function AdminPortalPage() {
             </div>
           </div>
 
-          {/* 💾 Dinamik Paywall Stratejisini Kaydet & Canlıya Al */}
           <div className="p-5 rounded-3xl bg-gradient-to-b from-amber-950/30 via-slate-900 to-slate-900 border border-amber-500/40 flex flex-col gap-4 shadow-xl">
             <div className="flex items-center justify-between">
               <div>
@@ -513,7 +948,6 @@ export default function AdminPortalPage() {
               )}
             </div>
 
-            {/* 1. Oyun Eşiği */}
             <div>
               <label className="text-xs font-bold text-slate-300 block mb-2">
                 1. Maç Sonu Tetikleyicisi (Kaçıncı maçtan sonra Paywall açılsın?):
@@ -536,7 +970,6 @@ export default function AdminPortalPage() {
               </div>
             </div>
 
-            {/* 2. Ek Tetikleme Anahtarları */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
               <label className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
                 <div>
@@ -565,7 +998,6 @@ export default function AdminPortalPage() {
               </label>
             </div>
 
-            {/* 3. Fiyatlandırma & Kampanya Alanları */}
             <div className="grid grid-cols-2 gap-2.5 pt-1">
               <div>
                 <label className="text-[10px] text-slate-400 block mb-1">Aylık Fiyat (₺):</label>
@@ -614,7 +1046,6 @@ export default function AdminPortalPage() {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80">
               <Button
                 variant="primary"
@@ -640,7 +1071,94 @@ export default function AdminPortalPage() {
         </div>
       )}
 
-      {/* TAB 3: VERSIONS */}
+      {/* TAB: ANALYTICS */}
+      {activeTab === 'analytics' && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+              <Activity className="w-4 h-4 text-indigo-400" /> Kullanıcı Akışı & Drop-off Metrikleri
+            </h2>
+            <Button variant="outline" size="sm" onClick={fetchMetrics} disabled={loadingMetrics} className="text-xs">
+              <RotateCcw className={`w-3.5 h-3.5 mr-1 ${loadingMetrics ? 'animate-spin' : ''}`} /> Yenile
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Tekil Oturum</span>
+              <span className="text-2xl font-black text-white font-mono">{summary.uniqueSessions}</span>
+              <span className="text-[10px] text-emerald-400 font-semibold">{summary.totalEvents} Toplam Olay</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Onboarding Başarısı</span>
+              <span className="text-2xl font-black text-purple-300 font-mono">%{summary.onboardingRate}</span>
+              <span className="text-[10px] text-slate-400">{summary.onboardingCompletes} Tamamlandı</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Drop-off / Terk</span>
+              <span className="text-2xl font-black text-amber-400 font-mono">%{summary.dropOffRate}</span>
+              <span className="text-[10px] text-slate-400">{summary.gamesAbandoned} Terk Edilen Maç</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Paywall Dönüşümü</span>
+              <span className="text-2xl font-black text-emerald-400 font-mono">%{summary.paywallConversion}</span>
+              <span className="text-[10px] text-slate-400">{summary.paywallViews} Görüntüleme</span>
+            </div>
+          </div>
+
+          <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Clock className="w-4 h-4 text-cyan-400" /> Ekran Kalış Süreleri (Dwell Time) & Sağlık Dökümü
+              </h3>
+              <span className="text-[10px] text-slate-400">Kullanıcı Nerede Ne Kadar Kalıyor?</span>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {Object.entries(pageIssues).map(([path, stats]: [string, any]) => {
+                const hasIssues = stats.errors > 0 || stats.abandons > 0;
+                const dwell = stats.avgDwellSeconds || 30;
+                const minutes = Math.floor(dwell / 60);
+                const seconds = dwell % 60;
+                const timeFormatted = minutes > 0 ? `${minutes}dk ${seconds}sn` : `${seconds}sn`;
+
+                return (
+                  <div key={path} className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/90 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-white">{path}</span>
+                      </div>
+
+                      <div className="flex items-center gap-3 font-bold text-[11px]">
+                        <span className="text-cyan-300 font-mono flex items-center gap-1 bg-cyan-950/40 px-2.5 py-0.5 rounded-lg border border-cyan-500/20">
+                          <Clock className="w-3 h-3 text-cyan-400" /> Ort. {timeFormatted}
+                        </span>
+                        <span className="text-slate-400">{stats.views || 0} Ziyaret</span>
+                        {stats.abandons > 0 && <span className="text-amber-400">{stats.abandons} Terk</span>}
+                        {stats.errors > 0 && <span className="text-rose-400 font-black">{stats.errors} Hata!</span>}
+                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                          hasIssues ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                        }`}>
+                          {hasIssues ? 'İnceleme' : 'Stabil'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400 rounded-full"
+                        style={{ width: `${Math.min(100, Math.max(10, (dwell / 180) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: VERSIONS */}
       {activeTab === 'versions' && (
         <div className="flex flex-col gap-4">
           <div className="p-5 rounded-3xl bg-slate-900 border border-indigo-500/30 flex flex-col gap-4">
@@ -663,7 +1181,6 @@ export default function AdminPortalPage() {
               </div>
             </div>
 
-            {/* Test Modalleri */}
             <div className="flex items-center gap-2">
               <Button
                 variant="secondary"
@@ -703,7 +1220,6 @@ export default function AdminPortalPage() {
               </Button>
             </div>
 
-            {/* Yayınlama Formu */}
             <form onSubmit={handlePublishVersion} className="pt-3 border-t border-slate-800 flex flex-col gap-3">
               {publishSuccess && (
                 <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2">
@@ -777,66 +1293,7 @@ export default function AdminPortalPage() {
         </div>
       )}
 
-      {/* TAB 4: CARDS CMS */}
-      {activeTab === 'cards' && (
-        <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 flex flex-col gap-4">
-          <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-            <Layers className="w-4 h-4 text-indigo-400" /> Supabase Kart Havuzu & Yeni Kart Ekle
-          </h3>
-
-          <form onSubmit={handleSaveCard} className="flex flex-col gap-3">
-            {cardSaveStatus && (
-              <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
-                {cardSaveStatus}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] text-slate-400 block mb-1">Ana Kelime (Büyük Harf):</label>
-                <input
-                  type="text"
-                  value={newMainWord}
-                  onChange={(e) => setNewMainWord(e.target.value)}
-                  placeholder="Örn: AKILLI SAAT"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-black text-white uppercase focus:outline-none"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-slate-400 block mb-1">Kategori:</label>
-                <select
-                  value={newCardCategory}
-                  onChange={(e) => setNewCardCategory(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none"
-                >
-                  {['Genel Kültür', 'Sinema & Dizi', 'Spor', 'Teknoloji', 'Yemek & Mutfak', 'Tarih', '90lar & 2000ler'].map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[10px] text-slate-400 block mb-1">5 Yasaklı Kelime (Virgülle ayırın):</label>
-              <input
-                type="text"
-                value={newForbiddenWords}
-                onChange={(e) => setNewForbiddenWords(e.target.value)}
-                placeholder="KOL, ZAMAN, APPLE, BİLDİRİM, ADIMSAYAR"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white uppercase focus:outline-none"
-                required
-              />
-            </div>
-
-            <Button variant="primary" size="md" type="submit" className="text-xs py-3 font-black">
-              <Plus className="w-4 h-4 mr-1" /> Kartı Supabase Veritabanına Ekle
-            </Button>
-          </form>
-        </div>
-      )}
-
-      {/* TAB 5: ONBOARDING */}
+      {/* TAB: ONBOARDING */}
       {activeTab === 'onboarding' && (
         <div className="p-5 rounded-3xl bg-slate-900 border border-purple-500/30 flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -852,7 +1309,6 @@ export default function AdminPortalPage() {
             Kullanıcıların onboarding akışını, misafir olarak başlama ve daha sonra Google/Apple hesabı bağlama oranlarını takip edin.
           </p>
 
-          {/* User & Onboarding Metric Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
               <span className="text-[10px] font-bold text-slate-400">Bulut Misafirleri</span>
@@ -900,6 +1356,126 @@ export default function AdminPortalPage() {
             >
               <RotateCcw className="w-4 h-4 mr-1.5" /> Onboarding'i Sıfırla (Test Et)
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* New Deck Modal */}
+      {isNewDeckOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-3xl bg-slate-900 border border-indigo-500/30 p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h4 className="text-sm font-black text-white">Yeni Deste Oluştur</h4>
+              <button onClick={() => setIsNewDeckOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateDeck} className="flex flex-col gap-3">
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Deste Başlığı:</label>
+                <input
+                  type="text"
+                  value={newDeckName}
+                  onChange={(e) => setNewDeckName(e.target.value)}
+                  placeholder="Örn: 90lar Pop Müziği"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Deste Açıklaması:</label>
+                <input
+                  type="text"
+                  value={newDeckDesc}
+                  onChange={(e) => setNewDeckDesc(e.target.value)}
+                  placeholder="Şarkıcılar, albümler ve nostalji..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Deste Rengi:</label>
+                <div className="flex items-center gap-2">
+                  {['#6366f1', '#ec4899', '#10b981', '#06b6d4', '#f59e0b', '#8b5cf6', '#ef4444'].map((col) => (
+                    <button
+                      key={col}
+                      type="button"
+                      onClick={() => setNewDeckColor(col)}
+                      className={`w-7 h-7 rounded-xl border-2 transition-all ${
+                        newDeckColor === col ? 'scale-110 border-white' : 'border-transparent'
+                      }`}
+                      style={{ backgroundColor: col }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <Button variant="primary" size="md" type="submit" className="text-xs py-3 font-black mt-2">
+                Desteyi Oluştur & Kaydet
+              </Button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Card Modal */}
+      {editingCard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-3xl bg-slate-900 border border-indigo-500/30 p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h4 className="text-sm font-black text-white">Kartı Düzenle</h4>
+              <button onClick={() => setEditingCard(null)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateEditingCard} className="flex flex-col gap-3">
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Ana Kelime:</label>
+                <input
+                  type="text"
+                  value={editingCard.main_word}
+                  onChange={(e) => setEditingCard({ ...editingCard, main_word: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-black text-white uppercase focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">5 Yasaklı Kelime (Virgülle ayrılmış):</label>
+                <input
+                  type="text"
+                  value={(editingCard.forbidden_words || []).join(', ')}
+                  onChange={(e) =>
+                    setEditingCard({
+                      ...editingCard,
+                      forbidden_words: e.target.value.split(',').map((w) => w.trim().toUpperCase()),
+                    })
+                  }
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white uppercase focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Deste:</label>
+                <select
+                  value={editingCard.deck_id || 'deck-general'}
+                  onChange={(e) => setEditingCard({ ...editingCard, deck_id: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none"
+                >
+                  {decks.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <Button variant="primary" size="md" type="submit" className="text-xs py-3 font-black mt-1">
+                Değişiklikleri Kaydet
+              </Button>
+            </form>
           </div>
         </div>
       )}
