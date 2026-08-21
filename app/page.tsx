@@ -11,6 +11,9 @@ import { DeckGeneratorModal } from '@/components/ai/DeckGeneratorModal';
 import { RuleSettingsModal } from '@/components/game/RuleSettingsModal';
 import { ChangelogModal } from '@/components/ui/ChangelogModal';
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
+import { AuthModal } from '@/components/auth/AuthModal';
+import { ProfileDrawer } from '@/components/profile/ProfileDrawer';
+import { PaywallModal } from '@/components/monetization/PaywallModal';
 import { 
   Play, 
   Users, 
@@ -23,7 +26,8 @@ import {
   Trophy,
   History,
   Crown,
-  ShieldCheck
+  ShieldCheck,
+  User
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
@@ -31,51 +35,53 @@ import { Card } from '@/types/game';
 
 export default function HomePage() {
   const router = useRouter();
-  const { initializeGame, setGameMode, settings, updateSettings, teams } = useGameStore();
-  const { createRoom } = useRoomStore();
-  const { soundEnabled, toggleSound, guestName, setGuestName, hasCompletedOnboarding } = useUserStore();
+  const { initializeGame, teams, settings, updateSettings } = useGameStore();
+  const { leaveRoom } = useRoomStore();
+  const { 
+    guestName, 
+    setGuestName, 
+    soundEnabled, 
+    toggleSound, 
+    hasCompletedOnboarding, 
+    isProUser, 
+    userAvatar, 
+    isLoggedIn 
+  } = useUserStore();
 
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [customCards, setCustomCards] = useState<Card[]>([]);
 
-  // Automatically trigger onboarding on first visit
   useEffect(() => {
     analytics.pageView('/');
     if (!hasCompletedOnboarding) {
-      const timer = setTimeout(() => setIsOnboardingOpen(true), 400);
-      return () => clearTimeout(timer);
+      setIsOnboardingOpen(true);
     }
   }, [hasCompletedOnboarding]);
 
   const handleSoundToggle = () => {
     toggleSound();
-    soundManager.setSoundEnabled(!soundEnabled);
+    soundManager.toggleSound();
   };
 
-  // Start single device game
   const handleStartSingleDevice = () => {
-    setGameMode('single_device');
+    leaveRoom();
     initializeGame(teams, settings, customCards);
-    analytics.gameStart('single_device', teams.length);
+    soundManager.play('start');
     router.push('/play');
   };
 
-  // Create multiplayer room
-  const handleCreateRoom = () => {
-    const room = createRoom(`${guestName}'in Odası`, false, undefined, settings);
-    router.push(`/room/${room.code}`);
-  };
-
   const handleApplyAiMode = (mode: any) => {
-    if (mode.recommended_duration_seconds) {
-      updateSettings({
-        turn_duration: mode.recommended_duration_seconds,
-        pass_limit: mode.recommended_pass_limit || 3,
-      });
-    }
+    updateSettings({
+      turn_duration: mode.recommended_duration_seconds,
+      pass_limit: mode.recommended_pass_limit || 2,
+    });
+    soundManager.play('correct');
   };
 
   const handleAddAiCards = (cards: Card[]) => {
@@ -101,6 +107,25 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* User Profile Avatar */}
+          <button
+            onClick={() => setIsProfileDrawerOpen(true)}
+            className="flex items-center gap-1.5 p-1.5 pr-2.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-slate-200 transition-all relative"
+            title="Profil & Kariyer"
+          >
+            {userAvatar ? (
+              <img src={userAvatar} alt="Avatar" className="w-6 h-6 rounded-xl object-cover" />
+            ) : (
+              <div className="w-6 h-6 rounded-xl bg-indigo-500/20 text-indigo-400 font-black text-xs flex items-center justify-center">
+                {guestName.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span className="text-xs font-black truncate max-w-[70px]">{guestName}</span>
+            {isProUser && (
+              <Crown className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+            )}
+          </button>
+
           <button
             onClick={handleSoundToggle}
             className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
@@ -108,6 +133,7 @@ export default function HomePage() {
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-indigo-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
           </button>
+
           <button
             onClick={() => setIsRuleModalOpen(true)}
             className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
@@ -127,76 +153,81 @@ export default function HomePage() {
           onAddBonusCard={(card) => setCustomCards((prev) => [...prev, card])}
         />
 
-        {/* Player Name Input */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 flex items-center gap-3">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">Oyuncu:</span>
-          <input
-            type="text"
-            value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
-            placeholder="Takma Adın..."
-            className="bg-transparent text-sm font-extrabold text-white flex-1 focus:outline-none placeholder-slate-600"
-            maxLength={18}
-          />
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-3">
-          {/* Tek Cihazda Oyna */}
-          <Button
-            variant="primary"
-            size="xl"
-            onClick={handleStartSingleDevice}
-            className="flex items-center justify-between px-6 group overflow-hidden"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-white/10 group-hover:scale-110 transition-transform">
-                <Play className="w-6 h-6 fill-white" />
-              </div>
-              <div className="text-left">
-                <div className="text-lg font-black leading-tight">Tek Cihazda Oyna</div>
-                <div className="text-xs text-indigo-200 font-normal">Cihazı elden ele gezdirerek oyna</div>
-              </div>
-            </div>
-            <Flame className="w-5 h-5 text-amber-300 animate-pulse" />
-          </Button>
-
-          {/* Çok Cihazlı Oda Kur & Katıl */}
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={handleCreateRoom}
-              className="flex flex-col items-start justify-center p-4 h-auto text-left gap-1"
-            >
-              <Users className="w-5 h-5 text-indigo-400 mb-1" />
-              <span className="text-sm font-bold leading-tight">Oda Oluştur</span>
-              <span className="text-[11px] text-slate-400">Şifreli / Açık Oda</span>
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => router.push('/rooms')}
-              className="flex flex-col items-start justify-center p-4 h-auto text-left gap-1"
-            >
-              <Trophy className="w-5 h-5 text-purple-400 mb-1" />
-              <span className="text-sm font-bold leading-tight">Odaya Katıl</span>
-              <span className="text-[11px] text-slate-400">6 Haneli Kod ile</span>
-            </Button>
+        {/* Player Name / Quick Auth Action */}
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">Oyuncu:</span>
+            <input
+              type="text"
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              placeholder="Takma Adın..."
+              className="bg-transparent text-sm font-extrabold text-white flex-1 focus:outline-none placeholder-slate-600 truncate"
+              maxLength={18}
+            />
           </div>
 
-          {/* AI Destesi Üret */}
+          {!isLoggedIn ? (
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 py-1.5 px-3 rounded-xl border border-indigo-500/20 flex items-center gap-1 shrink-0"
+            >
+              <Sparkles className="w-3 h-3 text-indigo-400" /> Giriş Yap
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsProfileDrawerOpen(true)}
+              className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 py-1 px-2 rounded-lg border border-emerald-500/20 shrink-0"
+            >
+              ✓ Bağlı
+            </button>
+          )}
+        </div>
+
+        {/* Game Mode Actions */}
+        <div className="flex flex-col gap-3">
+          {/* Single Device Mode */}
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleStartSingleDevice}
+            fullWidth
+            className="py-4 font-black tracking-wide text-base shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-2 relative overflow-hidden group"
+          >
+            <Play className="w-5 h-5 fill-current" />
+            Tek Cihazda Oyna
+            <span className="text-[10px] uppercase font-bold bg-white/20 px-2 py-0.5 rounded-full ml-1">
+              Hızlı Parti
+            </span>
+          </Button>
+
+          {/* Online Multiplayer Lobby */}
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={() => router.push('/rooms')}
+            fullWidth
+            className="py-4 font-black text-sm flex items-center justify-center gap-2 border-indigo-500/30 hover:border-indigo-500/60"
+          >
+            <Users className="w-5 h-5 text-indigo-400" />
+            Çok Oyunculu Odalar (Online)
+            <span className="text-[10px] uppercase font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+              Canlı
+            </span>
+          </Button>
+
+          {/* AI Deck Generator */}
           <Button
             variant="ghost"
             size="md"
             onClick={() => setIsDeckModalOpen(true)}
-            className="border border-indigo-500/30 bg-indigo-950/30 hover:bg-indigo-950/60 text-indigo-300 py-3.5"
+            fullWidth
+            className="py-3 font-bold text-xs flex items-center justify-center gap-2 border border-purple-500/30 bg-purple-950/20 hover:bg-purple-950/40 text-purple-200"
           >
-            <Sparkles className="w-4 h-4 text-amber-300 mr-2" />
-            <span className="text-xs font-extrabold">Gemini ile Özel Deste Üret</span>
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            Gemini AI ile Özel Deste Üret
             {customCards.length > 0 && (
-              <span className="ml-2 text-[10px] bg-indigo-500/30 text-indigo-200 py-0.5 px-2 rounded-full font-bold">
+              <span className="bg-purple-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
                 +{customCards.length} Kart
               </span>
             )}
@@ -231,7 +262,20 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* Modals */}
+      {/* Modals & Drawers */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      <ProfileDrawer
+        isOpen={isProfileDrawerOpen}
+        onClose={() => setIsProfileDrawerOpen(false)}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenRules={() => setIsRuleModalOpen(true)}
+        onOpenPaywall={() => setIsPaywallOpen(true)}
+      />
+
       <OnboardingModal
         isOpen={isOnboardingOpen}
         onClose={() => setIsOnboardingOpen(false)}
@@ -249,6 +293,12 @@ export default function HomePage() {
         isOpen={isDeckModalOpen}
         onClose={() => setIsDeckModalOpen(false)}
         onAddCards={handleAddAiCards}
+      />
+
+      <PaywallModal
+        isOpen={isPaywallOpen}
+        onClose={() => setIsPaywallOpen(false)}
+        triggerSource="manual_upgrade"
       />
 
       <ChangelogModal

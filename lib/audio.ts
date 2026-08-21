@@ -23,8 +23,23 @@ class SoundController {
     this.soundEnabled = enabled;
   }
 
+  public toggleSound() {
+    this.soundEnabled = !this.soundEnabled;
+    return this.soundEnabled;
+  }
+
   public isSoundEnabled() {
     return this.soundEnabled;
+  }
+
+  public play(type: 'correct' | 'buzzer' | 'pass' | 'tick' | 'start' | 'game_over' | string) {
+    if (!this.soundEnabled) return;
+    if (type === 'correct') this.playCorrect();
+    else if (type === 'buzzer' || type === 'tabu') this.playBuzzer();
+    else if (type === 'pass') this.playPass();
+    else if (type === 'tick') this.playTick();
+    else if (type === 'start') this.playFanfare();
+    else if (type === 'game_over') this.playFanfare();
   }
 
   public playCorrect() {
