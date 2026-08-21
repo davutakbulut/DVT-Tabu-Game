@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { Room, Player, Team, GameSettings } from '@/types/game';
 import { DEFAULT_GAME_SETTINGS } from '@/lib/constants';
-import { generateRoomCode } from '@/lib/game-logic';
 
 interface RoomStoreState {
   currentRoom: Room | null;
@@ -9,24 +8,32 @@ interface RoomStoreState {
   teams: Team[];
   isHost: boolean;
   myPlayerId: string;
-  isUnlocked: boolean; // Password PIN check passed
-  
-  // Actions
-  createRoom: (title: string, isPrivate: boolean, pinCode?: string, settings?: Partial<GameSettings>) => Room;
+  isUnlocked: boolean;
+
+  setUnlocked: (unlocked: boolean) => void;
+  createRoom: (title?: string, isPrivate?: boolean, pinCode?: string, customSettings?: Partial<GameSettings>, forcedCode?: string) => Room;
   joinRoom: (code: string, guestName: string, enteredPin?: string) => boolean;
   leaveRoom: () => void;
   setTeam: (playerId: string, teamId: string) => void;
   toggleReady: (playerId: string) => void;
-  updateRoomSettings: (newSettings: Partial<GameSettings>) => void;
   setPresenter: (playerId: string) => void;
-  setUnlocked: (unlocked: boolean) => void;
+  updateRoomSettings: (newSettings: Partial<GameSettings>) => void;
 }
 
+const generateRoomCode = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
+
 const mockTeams: Team[] = [
-  { id: 'team-blue', name: 'Mavi Şimşekler', color: '#3b82f6', score: 0, order_index: 0 },
-  { id: 'team-red', name: 'Kırmızı Ejderler', color: '#ef4444', score: 0, order_index: 1 },
-  { id: 'team-green', name: 'Yeşil Fırtına', color: '#10b981', score: 0, order_index: 2 },
-  { id: 'team-yellow', name: 'Sarı Kaplanlar', color: '#f59e0b', score: 0, order_index: 3 },
+  { id: 'team-blue', name: 'Mavi Takım', color: '#6366f1', score: 0, order_index: 0 },
+  { id: 'team-red', name: 'Kırmızı Takım', color: '#ef4444', score: 0, order_index: 1 },
+  { id: 'team-green', name: 'Yeşil Takım', color: '#10b981', score: 0, order_index: 2 },
+  { id: 'team-yellow', name: 'Sarı Takım', color: '#f59e0b', score: 0, order_index: 3 },
 ];
 
 export const useRoomStore = create<RoomStoreState>((set, get) => ({
@@ -39,8 +46,8 @@ export const useRoomStore = create<RoomStoreState>((set, get) => ({
 
   setUnlocked: (unlocked) => set({ isUnlocked: unlocked }),
 
-  createRoom: (title, isPrivate, pinCode, customSettings) => {
-    const code = generateRoomCode();
+  createRoom: (title, isPrivate = false, pinCode, customSettings, forcedCode) => {
+    const code = forcedCode ? forcedCode.toUpperCase() : generateRoomCode();
     const settings = { ...DEFAULT_GAME_SETTINGS, ...(customSettings || {}) };
     const room: Room = {
       id: `room-${Date.now()}`,

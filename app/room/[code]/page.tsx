@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useRoomStore } from '@/stores/roomStore';
 import { useGameStore } from '@/stores/gameStore';
@@ -24,9 +24,13 @@ export default function RoomLobbyPage() {
 
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const initializedRef = useRef(false);
 
-  // Auto-initialize room if navigating directly to /room/[code]
+  // Auto-initialize room once if navigating directly to /room/[code]
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     if (!currentRoom || currentRoom.code !== roomCode) {
       // Mock room titles based on code
       const titles: Record<string, string> = {
@@ -34,12 +38,18 @@ export default function RoomLobbyPage() {
         TABU99: 'Pro Tabu Kapışması 🏆',
         NOSTAL: '90lar & 2000ler Gecesi 🎸',
       };
-      const title = titles[roomCode] || `${guestName}'in Tabu Odası`;
+      const title = titles[roomCode] || `${guestName || 'Misafir'}'in Tabu Odası`;
       const isPrivate = roomCode === 'TABU99' || Boolean(pinParam);
       
-      createRoom(title, isPrivate, pinParam || (roomCode === 'TABU99' ? '1234' : undefined));
+      createRoom(
+        title, 
+        isPrivate, 
+        pinParam || (roomCode === 'TABU99' ? '1234' : undefined),
+        undefined,
+        roomCode
+      );
     }
-  }, [roomCode, currentRoom, pinParam, guestName, createRoom]);
+  }, [roomCode, pinParam, guestName, createRoom]);
 
   const handleCopyCode = () => {
     if (typeof navigator !== 'undefined') {
