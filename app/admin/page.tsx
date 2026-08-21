@@ -30,8 +30,12 @@ import {
   Plus, 
   LogOut, 
   ArrowLeft,
-  Search,
-  BookOpen
+  Save,
+  Clock,
+  Zap,
+  Tag,
+  Flame,
+  Check
 } from 'lucide-react';
 
 export default function AdminPortalPage() {
@@ -50,6 +54,19 @@ export default function AdminPortalPage() {
   // Analytics Data
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
+
+  // Strategy & Monetization State (Live Config)
+  const [strategyConfig, setStrategyConfig] = useState({
+    paywall_games_threshold: 2,
+    ai_deck_paywall_enabled: true,
+    vip_room_paywall_enabled: false,
+    monthly_price: 49.99,
+    annual_price: 349.99,
+    active_campaign_title: '%40 Lansman Fırsatı',
+    campaign_badge: 'SINIRLI SÜRE',
+  });
+  const [savingStrategy, setSavingStrategy] = useState(false);
+  const [strategySavedSuccess, setStrategySavedSuccess] = useState(false);
 
   // Version Form
   const [newVersionTag, setNewVersionTag] = useState('1.2.0');
@@ -80,9 +97,19 @@ export default function AdminPortalPage() {
       .finally(() => setLoadingMetrics(false));
   };
 
+  const fetchStrategyConfig = () => {
+    fetch('/api/config')
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.config) setStrategyConfig(res.config);
+      })
+      .catch(() => {});
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchMetrics();
+      fetchStrategyConfig();
     }
   }, [isAuthenticated]);
 
@@ -94,6 +121,28 @@ export default function AdminPortalPage() {
       setPinInput('');
     } else {
       setPinError(true);
+    }
+  };
+
+  const handleSaveStrategy = async () => {
+    setSavingStrategy(true);
+    setStrategySavedSuccess(false);
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(strategyConfig),
+      });
+      if (res.ok) {
+        setStrategySavedSuccess(true);
+        setTimeout(() => setStrategySavedSuccess(false), 4000);
+      } else {
+        alert('Strateji kaydedilemedi.');
+      }
+    } catch {
+      alert('Sunucu bağlantı hatası.');
+    } finally {
+      setSavingStrategy(false);
     }
   };
 
@@ -186,6 +235,7 @@ export default function AdminPortalPage() {
   };
 
   const pageIssues = analyticsData?.pageIssues || {};
+  const paywallByTrigger = analyticsData?.paywallByTrigger || [];
 
   // 1. PIN Lock Screen if not logged in
   if (!isAuthenticated) {
@@ -280,8 +330,8 @@ export default function AdminPortalPage() {
       <nav className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-900">
         {[
           { id: 'analytics', label: 'Analitik & Drop-off', icon: <BarChart3 className="w-4 h-4" /> },
-          { id: 'versions', label: 'Sürüm & Dağıtım', icon: <ArrowUpCircle className="w-4 h-4" /> },
           { id: 'monetization', label: 'Monetizasyon & Paywall', icon: <Crown className="w-4 h-4" /> },
+          { id: 'versions', label: 'Sürüm & Dağıtım', icon: <ArrowUpCircle className="w-4 h-4" /> },
           { id: 'cards', label: 'Kart Havuzu (CMS)', icon: <Layers className="w-4 h-4" /> },
           { id: 'onboarding', label: 'Onboarding Akışı', icon: <Compass className="w-4 h-4" /> },
         ].map((tab) => (
@@ -300,7 +350,7 @@ export default function AdminPortalPage() {
         ))}
       </nav>
 
-      {/* TAB 1: ANALYTICS */}
+      {/* TAB 1: ANALYTICS & SCREEN ENGAGEMENT */}
       {activeTab === 'analytics' && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -335,26 +385,58 @@ export default function AdminPortalPage() {
             </div>
           </div>
 
-          {/* Sayfa Sağlığı */}
-          <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 flex flex-col gap-3">
-            <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400" /> Sayfa Sağlığı & Terk Edilme Dökümü
-            </h3>
-            <div className="flex flex-col gap-2">
+          {/* ⏱️ Ekran Kalış Süreleri & Sağlık Isı Haritası */}
+          <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Clock className="w-4 h-4 text-cyan-400" /> Ekran Kalış Süreleri (Dwell Time) & Sağlık Dökümü
+              </h3>
+              <span className="text-[10px] text-slate-400">Kullanıcı Nerede Ne Kadar Kalıyor?</span>
+            </div>
+
+            <div className="flex flex-col gap-3">
               {Object.entries(pageIssues).map(([path, stats]: [string, any]) => {
                 const hasIssues = stats.errors > 0 || stats.abandons > 0;
+                const dwell = stats.avgDwellSeconds || 30;
+                const minutes = Math.floor(dwell / 60);
+                const seconds = dwell % 60;
+                const timeFormatted = minutes > 0 ? `${minutes}dk ${seconds}sn` : `${seconds}sn`;
+
                 return (
-                  <div key={path} className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center justify-between text-xs">
-                    <span className="font-mono font-bold text-white">{path}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-slate-400">{stats.views || 0} Ziyaret</span>
-                      {stats.abandons > 0 && <span className="text-amber-400">{stats.abandons} Terk</span>}
-                      {stats.errors > 0 && <span className="text-rose-400 font-bold">{stats.errors} Hata</span>}
-                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                        hasIssues ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                      }`}>
-                        {hasIssues ? 'İnceleme' : 'Stabil'}
-                      </span>
+                  <div key={path} className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/90 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-white">{path}</span>
+                        <span className="text-[11px] text-slate-400">
+                          {path === '/' && '(Ana Sayfa)'}
+                          {path === '/play' && '(Oyun Arenası - En Yoğun 🔥)'}
+                          {path === '/room/[code]' && '(Oda Lobisi)'}
+                          {path === '/rooms' && '(Oda Keşfi)'}
+                          {path === '/summary' && '(Podyum & Özet)'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 font-bold text-[11px]">
+                        <span className="text-cyan-300 font-mono flex items-center gap-1 bg-cyan-950/40 px-2.5 py-0.5 rounded-lg border border-cyan-500/20">
+                          <Clock className="w-3 h-3 text-cyan-400" /> Ort. {timeFormatted}
+                        </span>
+                        <span className="text-slate-400">{stats.views || 0} Ziyaret</span>
+                        {stats.abandons > 0 && <span className="text-amber-400">{stats.abandons} Terk</span>}
+                        {stats.errors > 0 && <span className="text-rose-400 font-black">{stats.errors} Hata!</span>}
+                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                          hasIssues ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                        }`}>
+                          {hasIssues ? 'İnceleme' : 'Stabil'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar Visualizing Relative Time */}
+                    <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400 rounded-full"
+                        style={{ width: `${Math.min(100, Math.max(10, (dwell / 180) * 100))}%` }}
+                      />
                     </div>
                   </div>
                 );
@@ -364,7 +446,201 @@ export default function AdminPortalPage() {
         </div>
       )}
 
-      {/* TAB 2: VERSIONS */}
+      {/* TAB 2: MONETIZATION, LIVE STRATEGY & TRIGGER BREAKDOWN */}
+      {activeTab === 'monetization' && (
+        <div className="flex flex-col gap-4">
+          {/* 🎯 Paywall Tetikleme Noktaları Başarı & Tıklama Tablosu */}
+          <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-amber-400" /> Paywall Tetikleme Noktaları & Tıklama Sayıları (Canlı)
+              </h3>
+              <span className="text-[10px] text-slate-400">Dönüşüm / Tıklama Oranları</span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {paywallByTrigger.map((trigger: any) => (
+                <div key={trigger.key} className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-black text-white block text-sm">{trigger.label}</span>
+                    <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
+                      Kaynak: {trigger.key}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-end">
+                      <span className="text-slate-300 font-bold">{trigger.views} Gösterim</span>
+                      <span className="text-emerald-400 font-bold">{trigger.clicks} Tıklama / Abone</span>
+                    </div>
+
+                    <div className="flex flex-col items-end min-w-[70px]">
+                      <span className="text-base font-black text-amber-400 font-mono">%{trigger.conversionRate}</span>
+                      <span className="text-[9px] text-slate-500 uppercase font-bold">Dönüşüm</span>
+                    </div>
+
+                    <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-lg border ${
+                      trigger.conversionRate >= 30
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                        : trigger.conversionRate >= 15
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}>
+                      {trigger.conversionRate >= 30 ? 'Yüksek 🚀' : trigger.conversionRate >= 15 ? 'Normal' : 'Geliştir'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 💾 Dinamik Paywall Stratejisini Kaydet & Canlıya Al */}
+          <div className="p-5 rounded-3xl bg-gradient-to-b from-amber-950/30 via-slate-900 to-slate-900 border border-amber-500/40 flex flex-col gap-4 shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-black text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                  <Crown className="w-4 h-4 text-amber-400" /> Canlı Paywall & Fiyatlandırma Stratejisi
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Ayarları değiştirdikten sonra "Kaydet & Canlıya Al" butonuna basarak tüm oyunculara anında yayınlayabilirsiniz.
+                </p>
+              </div>
+
+              {strategySavedSuccess && (
+                <div className="p-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black flex items-center gap-1.5 animate-pulse">
+                  <Check className="w-4 h-4" /> Strateji Canlıda!
+                </div>
+              )}
+            </div>
+
+            {/* 1. Oyun Eşiği */}
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-2">
+                1. Maç Sonu Tetikleyicisi (Kaçıncı maçtan sonra Paywall açılsın?):
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[1, 2, 3].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setStrategyConfig({ ...strategyConfig, paywall_games_threshold: num })}
+                    className={`py-3 rounded-2xl text-xs font-black border transition-all ${
+                      strategyConfig.paywall_games_threshold === num
+                        ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-md shadow-amber-500/10'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    {num}. Oyundan Sonra
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Ek Tetikleme Anahtarları */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              <label className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-bold text-white block">Gemini AI Deste Limiti</span>
+                  <span className="text-[10px] text-slate-400">Ücretsiz 1 desteden sonra Paywall aç</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={strategyConfig.ai_deck_paywall_enabled}
+                  onChange={(e) => setStrategyConfig({ ...strategyConfig, ai_deck_paywall_enabled: e.target.checked })}
+                  className="rounded accent-amber-500 w-5 h-5 cursor-pointer"
+                />
+              </label>
+
+              <label className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-bold text-white block">VIP Özel Oda Koruma</span>
+                  <span className="text-[10px] text-slate-400">Şifreli oda açarken Pro talep et</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={strategyConfig.vip_room_paywall_enabled}
+                  onChange={(e) => setStrategyConfig({ ...strategyConfig, vip_room_paywall_enabled: e.target.checked })}
+                  className="rounded accent-amber-500 w-5 h-5 cursor-pointer"
+                />
+              </label>
+            </div>
+
+            {/* 3. Fiyatlandırma & Kampanya Alanları */}
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Aylık Fiyat (₺):</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={strategyConfig.monthly_price}
+                  onChange={(e) => setStrategyConfig({ ...strategyConfig, monthly_price: parseFloat(e.target.value) || 49 })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Yıllık Fiyat (₺):</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={strategyConfig.annual_price}
+                  onChange={(e) => setStrategyConfig({ ...strategyConfig, annual_price: parseFloat(e.target.value) || 349 })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Aktif Kampanya Başlığı:</label>
+                <input
+                  type="text"
+                  value={strategyConfig.active_campaign_title}
+                  onChange={(e) => setStrategyConfig({ ...strategyConfig, active_campaign_title: e.target.value })}
+                  placeholder="%40 Lansman Fırsatı"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Kampanya Rozet Metni:</label>
+                <input
+                  type="text"
+                  value={strategyConfig.campaign_badge}
+                  onChange={(e) => setStrategyConfig({ ...strategyConfig, campaign_badge: e.target.value })}
+                  placeholder="SINIRLI SÜRE"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleSaveStrategy}
+                disabled={savingStrategy}
+                className="flex-1 py-3.5 font-black text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 shadow-lg shadow-amber-500/25"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {savingStrategy ? 'Canlıya Alınıyor...' : '💾 Stratejiyi Kaydet & Canlıya Al'}
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => setIsTestPaywallOpen(true)}
+                className="text-xs py-3.5 border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+              >
+                <Crown className="w-4 h-4 mr-1.5" /> Modalı Önizle
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: VERSIONS */}
       {activeTab === 'versions' && (
         <div className="flex flex-col gap-4">
           <div className="p-5 rounded-3xl bg-slate-900 border border-indigo-500/30 flex flex-col gap-4">
@@ -498,36 +774,6 @@ export default function AdminPortalPage() {
               </div>
             </form>
           </div>
-        </div>
-      )}
-
-      {/* TAB 3: MONETIZATION */}
-      {activeTab === 'monetization' && (
-        <div className="p-5 rounded-3xl bg-slate-900 border border-amber-500/30 flex flex-col gap-4">
-          <h3 className="text-xs font-black text-amber-300 uppercase tracking-wider flex items-center gap-2">
-            <Crown className="w-4 h-4 text-amber-400" /> DVT Tabu Pro & Paywall Stratejisi
-          </h3>
-          <p className="text-xs text-slate-300">
-            Kullanıcılar kaçıncı maçtan sonra Pro teklifiyle karşılaşsın?
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {[1, 2, 3].map((num) => (
-              <button
-                key={num}
-                className="py-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black"
-              >
-                {num}. Maçtan Sonra
-              </button>
-            ))}
-          </div>
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={() => setIsTestPaywallOpen(true)}
-            className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10 text-xs py-3"
-          >
-            <Crown className="w-4 h-4 mr-1.5" /> Paywall Modalını Önizle / Test Et
-          </Button>
         </div>
       )}
 

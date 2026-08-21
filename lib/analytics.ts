@@ -1,5 +1,5 @@
 /**
- * 📊 DVT Tabu Game - İstemci & Sunucu Analitik Motoru
+ * 📊 DVT Tabu Game - İstemci & Sunucu Analitik ve Ekran Kalış Süresi Motoru
  */
 
 const getSessionId = (): string => {
@@ -12,11 +12,8 @@ const getSessionId = (): string => {
   return sId;
 };
 
-export interface AnalyticsPayload {
-  eventName: string;
-  pagePath?: string;
-  metadata?: Record<string, any>;
-}
+let activePagePath: string = '/';
+let activePageStartTime: number = Date.now();
 
 export const trackEvent = async (eventName: string, metadata: Record<string, any> = {}, pagePath?: string) => {
   if (typeof window === 'undefined') return;
@@ -30,7 +27,6 @@ export const trackEvent = async (eventName: string, metadata: Record<string, any
   };
 
   try {
-    // Fire-and-forget beacon or fetch
     if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/analytics', JSON.stringify(payload));
     } else {
@@ -41,13 +37,22 @@ export const trackEvent = async (eventName: string, metadata: Record<string, any
         keepalive: true,
       }).catch(() => {});
     }
-  } catch (err) {
-    // Silently ignore analytics errors
-  }
+  } catch {}
 };
 
 export const analytics = {
-  pageView: (path: string) => trackEvent('page_view', {}, path),
+  pageView: (path: string) => {
+    // Record dwell time of previous page if applicable
+    if (typeof window !== 'undefined' && activePagePath && activePageStartTime) {
+      const dwellSeconds = Math.round((Date.now() - activePageStartTime) / 1000);
+      if (dwellSeconds > 1 && dwellSeconds < 1800) {
+        trackEvent('page_dwell_time', { dwellSeconds }, activePagePath);
+      }
+    }
+    activePagePath = path;
+    activePageStartTime = Date.now();
+    trackEvent('page_view', {}, path);
+  },
   onboardingStart: () => trackEvent('onboarding_start', { step: 1 }),
   onboardingStep: (stepNumber: number, stepTitle: string) => 
     trackEvent('onboarding_step', { step: stepNumber, title: stepTitle }),
@@ -63,8 +68,8 @@ export const analytics = {
     trackEvent('game_finished', { score, totalRounds, gameNumber }),
   paywallView: (triggerSource: string, gamesPlayed: number) => 
     trackEvent('paywall_view', { triggerSource, gamesPlayed }),
-  paywallCtaClick: (planId: string) => 
-    trackEvent('paywall_cta_click', { planId }),
+  paywallCtaClick: (planId: string, triggerSource?: string) => 
+    trackEvent('paywall_cta_click', { planId, triggerSource }),
   clientError: (errorMessage: string, componentStack?: string) => 
     trackEvent('client_error', { errorMessage, componentStack }),
 };

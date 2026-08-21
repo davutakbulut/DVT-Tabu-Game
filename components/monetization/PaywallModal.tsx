@@ -8,11 +8,9 @@ import {
   Sparkles, 
   ShieldCheck, 
   Zap, 
-  CheckCircle2, 
-  X, 
-  Flame, 
   Star,
-  Check
+  Check,
+  X
 } from 'lucide-react';
 import { analytics } from '@/lib/analytics';
 import { useUserStore } from '@/stores/userStore';
@@ -31,17 +29,30 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   const { isProUser, setIsProUser, totalGamesPlayed } = useUserStore();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [isUpgraded, setIsUpgraded] = useState(false);
+  const [remoteConfig, setRemoteConfig] = useState<any>({
+    monthly_price: 49.99,
+    annual_price: 349.99,
+    active_campaign_title: '%40 Lansman Fırsatı',
+    campaign_badge: 'SINIRLI SÜRE',
+  });
 
   useEffect(() => {
     if (isOpen) {
       analytics.paywallView(triggerSource, totalGamesPlayed);
+      // Fetch live pricing from Supabase remote config
+      fetch('/api/config')
+        .then((res) => res.json())
+        .then((res) => {
+          if (res.config) setRemoteConfig(res.config);
+        })
+        .catch(() => {});
     }
   }, [isOpen, triggerSource, totalGamesPlayed]);
 
   if (!isOpen) return null;
 
   const handleUpgrade = () => {
-    analytics.paywallCtaClick(selectedPlan);
+    analytics.paywallCtaClick(selectedPlan, triggerSource);
     setIsProUser(true);
     setIsUpgraded(true);
     setTimeout(() => {
@@ -89,7 +100,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
 
               <div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
-                  DVT TABU PRO
+                  {remoteConfig.active_campaign_title || 'DVT TABU PRO'}
                 </span>
                 <h3 className="text-xl font-black text-white mt-1">
                   Sınırsız Eğlenceye Katıl
@@ -135,11 +146,11 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                 }`}
               >
                 <span className="absolute -top-2 right-2 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  %33 İndirim
+                  {remoteConfig.campaign_badge || '%33 İndirim'}
                 </span>
                 <span className="text-xs font-bold block text-slate-300">Yıllık Plan</span>
-                <span className="text-base font-black text-amber-300 font-mono mt-1">399,99 ₺</span>
-                <span className="text-[10px] text-slate-400">33,30 ₺ / ay</span>
+                <span className="text-base font-black text-amber-300 font-mono mt-1">{remoteConfig.annual_price || 349} ₺</span>
+                <span className="text-[10px] text-slate-400">{(Number(remoteConfig.annual_price || 349) / 12).toFixed(1)} ₺ / ay</span>
               </button>
 
               {/* Aylık */}
@@ -153,7 +164,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                 }`}
               >
                 <span className="text-xs font-bold block text-slate-300">Aylık Plan</span>
-                <span className="text-base font-black text-amber-300 font-mono mt-1">49,99 ₺</span>
+                <span className="text-base font-black text-amber-300 font-mono mt-1">{remoteConfig.monthly_price || 49} ₺</span>
                 <span className="text-[10px] text-slate-400">Aylık yenilenir</span>
               </button>
             </div>
