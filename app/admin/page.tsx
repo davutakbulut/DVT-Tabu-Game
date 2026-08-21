@@ -48,8 +48,17 @@ import {
   Utensils,
   History,
   Globe,
-  X
+  X,
+  Bug,
+  Filter,
+  CheckCheck,
+  ChevronDown,
+  ChevronUp,
+  Terminal,
+  Server,
+  Monitor
 } from 'lucide-react';
+import { sendLog } from '@/lib/logger';
 
 export default function AdminPortalPage() {
   const router = useRouter();
@@ -66,12 +75,22 @@ export default function AdminPortalPage() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
 
-  // Active Tab: 'cards' | 'monetization' | 'analytics' | 'versions' | 'onboarding'
-  const [activeTab, setActiveTab] = useState<'cards' | 'monetization' | 'analytics' | 'versions' | 'onboarding'>('cards');
+  // Active Tab: 'cards' | 'monetization' | 'analytics' | 'logs' | 'versions' | 'onboarding'
+  const [activeTab, setActiveTab] = useState<'cards' | 'monetization' | 'analytics' | 'logs' | 'versions' | 'onboarding'>('cards');
 
   // Analytics Data
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
+
+  // Error Logs State
+  const [logs, setLogs] = useState<any[]>([]);
+  const [logsStats, setLogsStats] = useState<any>(null);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logLevelFilter, setLogLevelFilter] = useState('all');
+  const [logSourceFilter, setLogSourceFilter] = useState('all');
+  const [logStatusFilter, setLogStatusFilter] = useState('all'); // 'all' | 'open' | 'resolved'
+  const [logSearchQuery, setLogSearchQuery] = useState('');
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   // Strategy & Monetization State (Live Config)
   const [strategyConfig, setStrategyConfig] = useState({
@@ -140,6 +159,73 @@ export default function AdminPortalPage() {
       .finally(() => setLoadingMetrics(false));
   };
 
+  const fetchLogs = async () => {
+    setLoadingLogs(true);
+    try {
+      let url = `/api/logs?limit=100`;
+      if (logLevelFilter !== 'all') url += `&level=${logLevelFilter}`;
+      if (logSourceFilter !== 'all') url += `&source=${logSourceFilter}`;
+      if (logStatusFilter !== 'all') url += `&status=${logStatusFilter}`;
+      if (logSearchQuery) url += `&search=${encodeURIComponent(logSearchQuery)}`;
+
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = await res.json();
+        setLogs(json.logs || []);
+      }
+    } catch {} finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const fetchLogsStats = async () => {
+    try {
+      const res = await fetch('/api/logs/stats');
+      if (res.ok) {
+        const json = await res.json();
+        setLogsStats(json);
+      }
+    } catch {}
+  };
+
+  const handleResolveLog = async (id: string, currentStatus: boolean) => {
+    try {
+      await fetch('/api/logs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, is_resolved: !currentStatus }),
+      });
+      setLogs((prev) =>
+        prev.map((l) => (l.id === id ? { ...l, is_resolved: !currentStatus } : l))
+      );
+      fetchLogsStats();
+    } catch {}
+  };
+
+  const handleClearResolvedLogs = async () => {
+    if (!confirm('Çözülmüş olarak işaretlenen tüm logları silmek istediğinize emin misiniz?')) return;
+    try {
+      await fetch('/api/logs?action=clear_resolved', { method: 'DELETE' });
+      fetchLogs();
+      fetchLogsStats();
+    } catch {}
+  };
+
+  const handleCreateTestError = () => {
+    sendLog({
+      level: 'error',
+      source: 'client',
+      message: 'Test Hatası: Yönetici Paneli Üzerinden Canlı Loglama Tetiklendi 🚨',
+      stack_trace: 'Error: Simulated Admin Portal Test\n    at handleCreateTestError (app/admin/page.tsx:180:12)',
+      page_url: '/admin',
+      metadata: { test_mode: true, timestamp: new Date().toISOString() },
+    });
+    setTimeout(() => {
+      fetchLogs();
+      fetchLogsStats();
+    }, 600);
+  };
+
   const fetchStrategyConfig = () => {
     fetch('/api/config')
       .then((res) => res.json())
@@ -181,8 +267,16 @@ export default function AdminPortalPage() {
       fetchStrategyConfig();
       fetchDecks();
       fetchCards();
+      fetchLogs();
+      fetchLogsStats();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'logs') {
+      fetchLogs();
+    }
+  }, [logLevelFilter, logSourceFilter, logStatusFilter, logSearchQuery, activeTab]);
 
   useEffect(() => {
     if (isAuthenticated && (cmsSubTab === 'cards' || cmsSubTab === 'decks')) {
@@ -467,6 +561,16 @@ export default function AdminPortalPage() {
   const pageIssues = analyticsData?.pageIssues || {};
   const paywallByTrigger = analyticsData?.paywallByTrigger || [];
 
+  const logStatsSummary = logsStats?.summary || {
+    total: logs.length,
+    unresolved: logs.filter((l) => !l.is_resolved).length,
+    resolved: logs.filter((l) => l.is_resolved).length,
+    fatal: logs.filter((l) => l.level === 'fatal' && !l.is_resolved).length,
+    error: logs.filter((l) => l.level === 'error' && !l.is_resolved).length,
+    warn: logs.filter((l) => l.level === 'warn' && !l.is_resolved).length,
+    resolutionRate: 100,
+  };
+
   // 1. PIN Lock Screen if not logged in
   if (!isAuthenticated) {
     return (
@@ -534,7 +638,7 @@ export default function AdminPortalPage() {
               DVT Tabu Yönetim Merkezi
             </h1>
             <span className="text-[11px] text-slate-400 block mt-0.5">
-              Canlı Sistem, Desteler, Kelime Havuzu CMS & Analitik Kontrolü
+              Canlı Sistem, Desteler, Kelime Havuzu CMS, Hata Logları & Analitik Kontrolü
             </span>
           </div>
         </div>
@@ -577,6 +681,7 @@ export default function AdminPortalPage() {
       <nav className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {[
           { id: 'cards', label: 'Kart & Deste Havuzu (CMS)', icon: <Layers className="w-4 h-4" /> },
+          { id: 'logs', label: 'Hata & Log Merkezi', icon: <Bug className="w-4 h-4" />, badge: logStatsSummary.unresolved > 0 ? logStatsSummary.unresolved : null },
           { id: 'monetization', label: 'Monetizasyon & Paywall', icon: <Crown className="w-4 h-4" /> },
           { id: 'analytics', label: 'Analitik & Drop-off', icon: <BarChart3 className="w-4 h-4" /> },
           { id: 'versions', label: 'Sürüm & Dağıtım', icon: <ArrowUpCircle className="w-4 h-4" /> },
@@ -585,7 +690,7 @@ export default function AdminPortalPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 py-2.5 px-4 rounded-2xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${
+            className={`flex items-center gap-2 py-2.5 px-4 rounded-2xl text-xs font-black transition-all shrink-0 whitespace-nowrap relative ${
               activeTab === tab.id
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 border border-indigo-400/30'
                 : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800/80'
@@ -593,9 +698,258 @@ export default function AdminPortalPage() {
           >
             {tab.icon}
             <span>{tab.label}</span>
+            {tab.badge ? (
+              <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse ml-0.5">
+                {tab.badge}
+              </span>
+            ) : null}
           </button>
         ))}
       </nav>
+
+      {/* TAB: ERROR & LOG CENTER */}
+      {activeTab === 'logs' && (
+        <div className="flex flex-col gap-4">
+          {/* Top Error Stats Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Açık Hatalar</span>
+              <span className="text-2xl font-black text-rose-400 font-mono">{logStatsSummary.unresolved}</span>
+              <span className="text-[10px] text-slate-500">{logStatsSummary.total} Toplam Kayıt</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Kritik (Fatal)</span>
+              <span className="text-2xl font-black text-amber-400 font-mono">{logStatsSummary.fatal}</span>
+              <span className="text-[10px] text-rose-400 font-semibold">{logStatsSummary.error} Standart Hata</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Uyarılar (Warn)</span>
+              <span className="text-2xl font-black text-cyan-400 font-mono">{logStatsSummary.warn}</span>
+              <span className="text-[10px] text-slate-500">Hafif İhlaller</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Çözülme Oranı</span>
+              <span className="text-2xl font-black text-emerald-400 font-mono">%{logStatsSummary.resolutionRate}</span>
+              <span className="text-[10px] text-emerald-400">{logStatsSummary.resolved} Çözüldü</span>
+            </div>
+          </div>
+
+          {/* Filter & Action Toolbar */}
+          <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                value={logSearchQuery}
+                onChange={(e) => setLogSearchQuery(e.target.value)}
+                placeholder="Hata mesajı veya sayfa URL'inde ara..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              />
+              {logSearchQuery && (
+                <button onClick={() => setLogSearchQuery('')} className="absolute right-3 top-2.5 text-slate-400 hover:text-white p-0.5">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Dropdowns & Buttons */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={logLevelFilter}
+                onChange={(e) => setLogLevelFilter(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-white focus:outline-none"
+              >
+                <option value="all">Tüm Seviyeler</option>
+                <option value="fatal">Fatal (Kritik)</option>
+                <option value="error">Error (Hata)</option>
+                <option value="warn">Warn (Uyarı)</option>
+              </select>
+
+              <select
+                value={logSourceFilter}
+                onChange={(e) => setLogSourceFilter(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-white focus:outline-none"
+              >
+                <option value="all">Tüm Kaynaklar</option>
+                <option value="client">İstemci (Client)</option>
+                <option value="server">Sunucu (Server)</option>
+                <option value="api">API Routes</option>
+                <option value="gemini">Gemini AI</option>
+                <option value="supabase">Supabase</option>
+              </select>
+
+              <select
+                value={logStatusFilter}
+                onChange={(e) => setLogStatusFilter(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs font-bold text-white focus:outline-none"
+              >
+                <option value="all">Tüm Durumlar</option>
+                <option value="open">Açık Hatalar</option>
+                <option value="resolved">Çözülmüşler</option>
+              </select>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  fetchLogs();
+                  fetchLogsStats();
+                }}
+                disabled={loadingLogs}
+                className="text-xs px-3 py-2 bg-slate-950 border-slate-800 hover:bg-slate-800"
+                title="Yenile"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 ${loadingLogs ? 'animate-spin text-indigo-400' : ''}`} />
+              </Button>
+            </div>
+          </div>
+
+          {/* Quick Actions Row */}
+          <div className="flex items-center justify-between gap-2 px-1">
+            <button
+              onClick={handleCreateTestError}
+              className="text-[11px] font-bold text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors"
+            >
+              <Bug className="w-3.5 h-3.5" /> 🧪 Test Hatası Oluştur & Gönder
+            </button>
+
+            <button
+              onClick={handleClearResolvedLogs}
+              className="text-[11px] font-bold text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 border border-slate-800 hover:border-rose-500/30 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Çözülen Logları Temizle
+            </button>
+          </div>
+
+          {/* Log Items List */}
+          <div className="flex flex-col gap-2.5">
+            {logs.length === 0 ? (
+              <div className="p-8 text-center bg-slate-900/60 rounded-3xl border border-slate-800 flex flex-col items-center justify-center gap-2 text-slate-400">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                <span className="text-sm font-bold text-white">Harika! Hiç Açık Hata Kaydı Yok</span>
+                <p className="text-xs text-slate-500">Sistem stabil çalışıyor. Yeni hatalar oluştukça burada listelenecektir.</p>
+              </div>
+            ) : (
+              logs.map((log) => {
+                const isExpanded = expandedLogId === log.id;
+                const isResolved = log.is_resolved;
+
+                return (
+                  <div
+                    key={log.id}
+                    className={`p-4 rounded-2xl border transition-all flex flex-col gap-3 ${
+                      isResolved
+                        ? 'bg-slate-950/60 border-slate-900 opacity-60'
+                        : log.level === 'fatal'
+                        ? 'bg-rose-950/20 border-rose-500/40 shadow-lg shadow-rose-950/20'
+                        : log.level === 'error'
+                        ? 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                        : 'bg-slate-900/80 border-slate-800'
+                    }`}
+                  >
+                    {/* Header Row */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                        {/* Level Badge */}
+                        <span
+                          className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border shrink-0 mt-0.5 ${
+                            log.level === 'fatal'
+                              ? 'bg-rose-500 text-white border-rose-400'
+                              : log.level === 'error'
+                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                              : log.level === 'warn'
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                              : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                          }`}
+                        >
+                          {log.level}
+                        </span>
+
+                        {/* Source Badge */}
+                        <span className="text-[9px] font-bold bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md border border-slate-700 shrink-0 mt-0.5">
+                          {log.source || 'client'}
+                        </span>
+
+                        {/* Message */}
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs sm:text-sm font-black text-white leading-snug break-words">
+                            {log.message}
+                          </h4>
+                          <div className="flex items-center gap-3 text-[10px] text-slate-400 mt-1 flex-wrap font-mono">
+                            <span>📍 {log.page_url || '/'}</span>
+                            <span>🕒 {new Date(log.created_at).toLocaleString('tr-TR')}</span>
+                            {log.user_id && <span>👤 {log.user_id}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleResolveLog(log.id, isResolved)}
+                          className={`text-xs font-bold px-2.5 py-1 rounded-xl border transition-all flex items-center gap-1 ${
+                            isResolved
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                              : 'bg-slate-800 hover:bg-emerald-500/15 text-slate-300 hover:text-emerald-300 border-slate-700'
+                          }`}
+                          title={isResolved ? 'Tekrar Aç' : 'Çözüldü Olarak İşaretle'}
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>{isResolved ? 'Çözüldü' : 'Çöz'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                          className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors"
+                          title="Detayları Göster / Gizle"
+                        >
+                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expandable Stack Trace & Metadata Accordion */}
+                    {isExpanded && (
+                      <div className="pt-3 border-t border-slate-800/80 flex flex-col gap-2.5 text-xs">
+                        {log.stack_trace && (
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-400 block mb-1 flex items-center gap-1">
+                              <Terminal className="w-3 h-3 text-indigo-400" /> Hata Yığın İzi (Stack Trace):
+                            </span>
+                            <pre className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] font-mono text-rose-300/90 whitespace-pre-wrap overflow-x-auto leading-relaxed">
+                              {log.stack_trace}
+                            </pre>
+                          </div>
+                        )}
+
+                        {log.user_agent && (
+                          <div className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/60 text-[10px] text-slate-400 font-mono flex items-center gap-2">
+                            <Monitor className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span className="truncate">Tarayıcı: {log.user_agent}</span>
+                          </div>
+                        )}
+
+                        {log.metadata && Object.keys(log.metadata).length > 0 && (
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-400 block mb-1">Ek Parametreler (Metadata):</span>
+                            <pre className="p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-[10px] font-mono text-slate-300 overflow-x-auto">
+                              {JSON.stringify(log.metadata, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
 
       {/* TAB: CARDS & DECKS CMS */}
       {activeTab === 'cards' && (
