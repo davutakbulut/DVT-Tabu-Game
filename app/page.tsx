@@ -22,8 +22,8 @@ import {
   HelpCircle,
   Trophy,
   History,
-  BarChart3,
-  Crown
+  Crown,
+  ShieldCheck
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
@@ -101,13 +101,6 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => router.push('/analytics')}
-            className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
-            title="Analitik & Raporlama Paneli"
-          >
-            <BarChart3 className="w-4 h-4 text-emerald-400" />
-          </button>
           <button
             onClick={handleSoundToggle}
             className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
@@ -217,15 +210,25 @@ export default function HomePage() {
           onClick={() => setIsChangelogOpen(true)}
           className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition-colors font-bold bg-indigo-500/10 py-1 px-2.5 rounded-lg border border-indigo-500/20"
         >
-          <History className="w-3.5 h-3.5" /> Sürüm v1.0.0 (Yenilikler)
+          <History className="w-3.5 h-3.5" /> Sürüm v1.1.0 (Yenilikler)
         </button>
 
-        <button
-          onClick={() => setIsOnboardingOpen(true)}
-          className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors"
-        >
-          <HelpCircle className="w-3.5 h-3.5" /> Nasıl Oynanır?
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsOnboardingOpen(true)}
+            className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            <HelpCircle className="w-3.5 h-3.5" /> Nasıl Oynanır?
+          </button>
+
+          <button
+            onClick={() => router.push('/admin')}
+            className="p-1 rounded-lg text-slate-700 hover:text-slate-400 transition-colors"
+            title="Yönetici Portalı"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </footer>
 
       {/* Modals */}
