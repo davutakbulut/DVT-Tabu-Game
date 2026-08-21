@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
     }
 
     const eventRecord = {
-      id: ,
+      id: 'adev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7),
       ad_id,
       ad_title: ad_title || 'Reklam',
       event_type,
@@ -127,8 +127,8 @@ export async function POST(req: NextRequest) {
       } catch {
         try {
           await supabase.from('system_logs').insert([{
-            event_type: ,
-            message: ,
+            event_type: 'ad_event_fallback',
+            message: `Ad event: ${event_type} - ${ad_title || ad_id}`,
             page_url,
             user_id: user_id || guest_id,
             stack_trace: JSON.stringify(eventRecord),
