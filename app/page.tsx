@@ -49,6 +49,7 @@ export default function HomePage() {
     initializeUser 
   } = useUserStore();
 
+  const [isMounted, setIsMounted] = useState(false);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
@@ -59,6 +60,7 @@ export default function HomePage() {
   const [customCards, setCustomCards] = useState<Card[]>([]);
 
   useEffect(() => {
+    setIsMounted(true);
     analytics.pageView('/');
     initializeUser();
     if (!hasCompletedOnboarding) {
@@ -115,15 +117,20 @@ export default function HomePage() {
             className="flex items-center gap-1.5 p-1.5 pr-2.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-slate-200 transition-all relative"
             title="Profil & Kariyer"
           >
-            {userAvatar ? (
+            {isMounted && userAvatar ? (
               <img src={userAvatar} alt="Avatar" className="w-6 h-6 rounded-xl object-cover" />
             ) : (
-              <div className="w-6 h-6 rounded-xl bg-indigo-500/20 text-indigo-400 font-black text-xs flex items-center justify-center">
-                {guestName.charAt(0).toUpperCase()}
+              <div 
+                suppressHydrationWarning
+                className="w-6 h-6 rounded-xl bg-indigo-500/20 text-indigo-400 font-black text-xs flex items-center justify-center"
+              >
+                {isMounted ? (guestName?.charAt(0)?.toUpperCase() || 'M') : 'M'}
               </div>
             )}
-            <span className="text-xs font-black truncate max-w-[70px]">{guestName}</span>
-            {isProUser && (
+            <span suppressHydrationWarning className="text-xs font-black truncate max-w-[70px]">
+              {isMounted ? guestName : 'Misafir'}
+            </span>
+            {isMounted && isProUser && (
               <Crown className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
             )}
           </button>
@@ -161,7 +168,8 @@ export default function HomePage() {
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">Oyuncu:</span>
             <input
               type="text"
-              value={guestName}
+              suppressHydrationWarning
+              value={isMounted ? guestName : ''}
               onChange={(e) => setGuestName(e.target.value)}
               placeholder="Takma Adın..."
               className="bg-transparent text-sm font-extrabold text-white flex-1 focus:outline-none placeholder-slate-600 truncate"
