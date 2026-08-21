@@ -28,7 +28,11 @@ import {
   ArrowRight, 
   ArrowLeft,
   Zap,
-  Sliders
+  Sliders,
+  RotateCcw,
+  AlertOctagon,
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
@@ -74,9 +78,12 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
   // Wizard State
   const [teams, setTeams] = useState<Team[]>(storeTeams);
   const [turnDuration, setTurnDuration] = useState<number>(storeSettings.turn_duration || 60);
-  const [passLimit, setPassLimit] = useState<number>(storeSettings.pass_limit || 2);
+  const [passLimit, setPassLimit] = useState<number>(storeSettings.pass_limit ?? 2);
+  const [tabuLimit, setTabuLimit] = useState<number>(storeSettings.tabu_limit ?? 0);
   const [tabuPenalty, setTabuPenalty] = useState<number>(storeSettings.buzzer_penalty ?? -1);
-  const [targetScore, setTargetScore] = useState<number | null>(storeSettings.target_score || 50);
+  const [correctPoints, setCorrectPoints] = useState<number>(storeSettings.correct_points || 1);
+  const [targetScore, setTargetScore] = useState<number | null>(storeSettings.target_score ?? 50);
+  const [totalRounds, setTotalRounds] = useState<number>(storeSettings.total_rounds || 6);
   const [goldenRound, setGoldenRound] = useState<boolean>(storeSettings.golden_round_enabled ?? true);
   
   // Decks State
@@ -196,8 +203,11 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
       team_count: teams.length,
       turn_duration: turnDuration,
       pass_limit: passLimit,
+      tabu_limit: tabuLimit,
       buzzer_penalty: tabuPenalty,
-      target_score: targetScore,
+      correct_points: correctPoints,
+      target_score: targetScore === 0 ? null : targetScore,
+      total_rounds: totalRounds,
       golden_round_enabled: goldenRound,
     };
 
@@ -378,101 +388,227 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
           {/* ================= STEP 2: RULES ================= */}
           {currentStep === 2 && (
             <div className="flex flex-col gap-4 animate-in fade-in">
-              {/* 1. Turn Duration */}
+              {/* 1. Tur Süresi Slider + Hızlı Butonlar */}
               <div>
-                <label className="text-xs font-black text-white uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-indigo-400" /> Tur Süresi (Saniye)
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {[45, 60, 90, 120].map((dur) => (
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                    Tur Süresi
+                  </label>
+                  <span className="text-xs font-black text-indigo-400 font-mono bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                    {turnDuration} saniye
+                  </span>
+                </div>
+                
+                {/* Interactive Slider */}
+                <input
+                  type="range"
+                  min={30}
+                  max={180}
+                  step={5}
+                  value={turnDuration}
+                  onChange={(e) => setTurnDuration(parseInt(e.target.value, 10))}
+                  className="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer my-1.5"
+                />
+
+                {/* Quick Preset Buttons */}
+                <div className="grid grid-cols-5 gap-1.5 mt-1">
+                  {[
+                    { val: 30, label: '30s' },
+                    { val: 45, label: '45s' },
+                    { val: 60, label: '60s' },
+                    { val: 90, label: '90s' },
+                    { val: 120, label: '120s' },
+                  ].map((item) => (
                     <button
-                      key={dur}
+                      key={item.val}
                       type="button"
-                      onClick={() => setTurnDuration(dur)}
-                      className={`py-2.5 rounded-2xl text-xs font-black border transition-all ${
-                        turnDuration === dur
+                      onClick={() => setTurnDuration(item.val)}
+                      className={`py-1.5 rounded-xl text-[11px] font-black border transition-all ${
+                        turnDuration === item.val
                           ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/20'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                       }`}
                     >
-                      {dur} sn
+                      {item.label}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* 2. Pass Limit */}
+              {/* 2. Tur Başına Pas Hakkı */}
               <div>
-                <label className="text-xs font-black text-white uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-amber-400" /> Tur Başına Pas Hakkı
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {[1, 2, 3, 5].map((p) => (
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                    Tur Başına Pas Hakkı
+                  </label>
+                  <span className="text-xs font-black text-amber-400 font-mono">
+                    {passLimit >= 99 ? '∞ Sınırsız' : `${passLimit} Pas`}
+                  </span>
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {[0, 1, 2, 3, 4, 5, 999].map((p) => (
                     <button
                       key={p}
                       type="button"
                       onClick={() => setPassLimit(p)}
-                      className={`py-2.5 rounded-2xl text-xs font-black border transition-all ${
+                      className={`py-2 rounded-xl text-xs font-black border transition-all ${
                         passLimit === p
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500 shadow-sm'
+                          ? 'bg-amber-500/25 text-amber-300 border-amber-500 shadow-sm'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                       }`}
                     >
-                      {p} Pas
+                      {p === 999 ? '∞' : p}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* 3. Target Score */}
+              {/* 3. Tur Başına Tabu Limiti */}
               <div>
-                <label className="text-xs font-black text-white uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                  <Trophy className="w-3.5 h-3.5 text-emerald-400" /> Kazanma Hedef Puanı
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[25, 50, 100].map((sc) => (
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <AlertOctagon className="w-3.5 h-3.5 text-red-400" />
+                    Tur Başı Tabu / Ceza Hakkı
+                  </label>
+                  <span className="text-xs font-black text-red-400 font-mono">
+                    {tabuLimit === 0 ? '∞ Sınırsız' : `${tabuLimit} Hak`}
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[
+                    { val: 0, label: '∞ Sınırsız' },
+                    { val: 1, label: '1 Tabu' },
+                    { val: 2, label: '2 Tabu' },
+                    { val: 3, label: '3 Tabu' },
+                    { val: 5, label: '5 Tabu' },
+                  ].map((opt) => (
                     <button
-                      key={sc}
+                      key={opt.val}
                       type="button"
-                      onClick={() => setTargetScore(sc)}
-                      className={`py-2.5 rounded-2xl text-xs font-black border transition-all ${
-                        targetScore === sc
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500 shadow-sm'
+                      onClick={() => setTabuLimit(opt.val)}
+                      className={`py-2 rounded-xl text-[11px] font-black border transition-all ${
+                        tabuLimit === opt.val
+                          ? 'bg-red-500/25 text-red-300 border-red-500 shadow-sm'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                       }`}
                     >
-                      {sc} Puan
+                      {opt.label}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* 4. Tabu Penalty & Golden Round */}
-              <div className="grid grid-cols-2 gap-2.5 pt-1">
-                <div className="p-3 bg-slate-950/80 rounded-2xl border border-slate-800 flex flex-col justify-between gap-2">
-                  <span className="text-[10px] font-bold text-slate-400">Tabu Cezası:</span>
-                  <div className="flex items-center gap-1">
+              {/* 4. Tabu Cezası & Doğru Puanı */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Tabu Cezası */}
+                <div>
+                  <label className="text-xs font-black text-white uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
+                    Tabu Cezası
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
                     {[-1, -2, 0].map((pen) => (
                       <button
                         key={pen}
                         type="button"
                         onClick={() => setTabuPenalty(pen)}
-                        className={`flex-1 py-1 text-[10px] font-black rounded-lg border transition-all ${
+                        className={`py-2 rounded-xl text-xs font-black border transition-all ${
                           tabuPenalty === pen
-                            ? 'bg-rose-500/20 text-rose-300 border-rose-500'
-                            : 'bg-slate-900 border-slate-800 text-slate-400'
+                            ? 'bg-orange-500/25 text-orange-300 border-orange-500 shadow-sm'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                         }`}
                       >
-                        {pen === 0 ? '0' : pen}
+                        {pen === 0 ? '0' : `${pen} P`}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <label className="p-3 bg-slate-950/80 rounded-2xl border border-slate-800 flex items-center justify-between cursor-pointer">
+                {/* Doğru Başı Puan */}
+                <div>
+                  <label className="text-xs font-black text-white uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    Doğru Puanı
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[1, 2, 3].map((pts) => (
+                      <button
+                        key={pts}
+                        type="button"
+                        onClick={() => setCorrectPoints(pts)}
+                        className={`py-2 rounded-xl text-xs font-black border transition-all ${
+                          correctPoints === pts
+                            ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500 shadow-sm'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        +{pts} P
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Toplam Tur Sayısı & Hedef Skor */}
+              <div>
+                <label className="text-xs font-black text-white uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                  <Trophy className="w-3.5 h-3.5 text-purple-400" /> Toplam Tur Sayısı
+                </label>
+                <div className="grid grid-cols-6 gap-1">
+                  {[4, 6, 8, 10, 12, 16].map((rounds) => (
+                    <button
+                      key={rounds}
+                      type="button"
+                      onClick={() => setTotalRounds(rounds)}
+                      className={`py-2 rounded-xl text-xs font-black border transition-all ${
+                        totalRounds === rounds
+                          ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-500/20'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      {rounds} Tur
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 6. Hedef Kazanma Puanı & Altın Tur */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                {/* Target Score */}
+                <div>
+                  <label className="text-[11px] font-black text-slate-300 block mb-1">
+                    Kazanma Hedef Puanı:
+                  </label>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[
+                      { val: 25, label: '25 P' },
+                      { val: 50, label: '50 P' },
+                      { val: 100, label: '100 P' },
+                      { val: 0, label: 'Yok' },
+                    ].map((sc) => (
+                      <button
+                        key={sc.val}
+                        type="button"
+                        onClick={() => setTargetScore(sc.val === 0 ? null : sc.val)}
+                        className={`py-1.5 rounded-xl text-[11px] font-black border transition-all ${
+                          (targetScore === sc.val || (sc.val === 0 && targetScore === null))
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500'
+                            : 'bg-slate-950 border-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {sc.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Golden Round Switch */}
+                <label className="p-2.5 bg-slate-950/80 rounded-2xl border border-slate-800 flex items-center justify-between cursor-pointer">
                   <div>
                     <span className="text-xs font-black text-amber-300 block">Altın Tur (2x)</span>
-                    <span className="text-[9px] text-slate-400">Son turda puanlar 2 katı</span>
+                    <span className="text-[9px] text-slate-400">Son turda puanlar 2 katı & beraberlik uzatması</span>
                   </div>
                   <input
                     type="checkbox"
@@ -519,49 +655,47 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                     const isMeme = deck.id === 'deck-memes-2026';
 
                     return (
-                      <button
+                      <div
                         key={deck.id}
-                        type="button"
                         onClick={() => handleToggleDeck(deck.id)}
-                        className={`p-3 rounded-2xl border text-left flex items-center justify-between gap-2.5 transition-all ${
+                        className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
                           isSelected
-                            ? 'bg-indigo-950/40 border-indigo-500 shadow-md shadow-indigo-500/10'
-                            : 'bg-slate-950/70 border-slate-800/80 opacity-70 hover:opacity-100'
+                            ? 'bg-indigo-950/40 border-indigo-500 shadow-md shadow-indigo-500/15'
+                            : 'bg-slate-950/70 border-slate-800 hover:border-slate-700 opacity-60'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div
-                            className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
-                            style={{ backgroundColor: deck.color || '#6366f1' }}
-                          >
+                          <div className={`p-2 rounded-xl text-white ${
+                            isSelected ? 'bg-indigo-600' : 'bg-slate-800 text-slate-400'
+                          }`}>
                             {renderDeckIcon(deck.icon)}
                           </div>
 
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-black text-white truncate block">{deck.name}</span>
+                              <span className="text-xs font-black text-white truncate">
+                                {deck.name}
+                              </span>
                               {isMeme && (
-                                <span className="bg-rose-500/20 text-rose-300 text-[8px] font-black px-1.5 py-0.2 rounded border border-rose-500/30">
-                                  🔥 TREND
+                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0">
+                                  VIP 🔥
                                 </span>
                               )}
                             </div>
-                            <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                              {deck.card_count || 25} Kart
+                            <span className="text-[10px] text-slate-400 truncate block">
+                              {deck.card_count || '50+'} Kart
                             </span>
                           </div>
                         </div>
 
-                        <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border transition-all ${
-                            isSelected
-                              ? 'bg-indigo-600 border-indigo-400 text-white'
-                              : 'border-slate-700 bg-slate-900 text-transparent'
-                          }`}
-                        >
-                          <Check className="w-3 h-3 stroke-[3]" />
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all shrink-0 ${
+                          isSelected
+                            ? 'bg-indigo-600 border-indigo-400 text-white'
+                            : 'border-slate-700 bg-slate-900'
+                        }`}>
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -570,53 +704,61 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
           )}
         </div>
 
-        {/* Modal Bottom Footer Navigation */}
+        {/* Modal Bottom Wizard Control Buttons */}
         <div className="p-4 bg-slate-950 border-t border-slate-800/80 flex items-center justify-between gap-3">
           {currentStep > 1 ? (
             <Button
               variant="outline"
               size="md"
               onClick={() => setCurrentStep((currentStep - 1) as any)}
-              className="text-xs py-2.5 px-4 font-bold border-slate-800 hover:bg-slate-900 text-slate-300"
+              className="text-xs font-bold py-2.5 px-4 text-slate-300"
             >
-              <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Geri
+              <ArrowLeft className="w-4 h-4 mr-1" /> Geri
             </Button>
           ) : (
-            <button
+            <Button
+              variant="ghost"
+              size="md"
               onClick={onClose}
-              className="text-xs font-bold text-slate-500 hover:text-slate-300 px-2"
+              className="text-xs text-slate-400 hover:text-white"
             >
-              İptal
-            </button>
+              Vazgeç
+            </Button>
           )}
 
           {currentStep < 3 ? (
             <Button
               variant="primary"
               size="md"
-              onClick={() => setCurrentStep((currentStep + 1) as any)}
-              className="text-xs py-2.5 px-6 font-black bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-500/25"
+              onClick={() => {
+                analytics.gameSetupStep(currentStep + 1, currentStep === 1 ? 'rules' : 'decks');
+                setCurrentStep((currentStep + 1) as any);
+                soundManager.play('correct');
+              }}
+              className="text-xs font-black py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-500/25"
             >
-              İleri <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              <span>İleri: {currentStep === 1 ? 'Kurallar' : 'Desteler'}</span>
+              <ArrowRight className="w-4 h-4 ml-1.5" />
             </Button>
           ) : (
             <Button
               variant="primary"
               size="md"
               onClick={handleStartGame}
-              className="text-xs py-2.5 px-6 font-black bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:opacity-95 text-white shadow-xl shadow-indigo-500/30 animate-pulse"
+              className="text-xs font-black py-3 px-6 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:opacity-95 text-white shadow-xl shadow-emerald-500/25 flex items-center gap-2"
             >
-              <Play className="w-4 h-4 fill-current mr-1.5" /> ⚔️ Arenaya Başla!
+              <Play className="w-4 h-4 fill-white" />
+              <span>Oyunu Başlat ({teams.length} Takım)</span>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Dynamic Paywall Modal if triggered */}
+      {/* Paywall Trigger Modal */}
       <PaywallModal
         isOpen={paywallOpen}
         onClose={() => setPaywallOpen(false)}
-        triggerSource={paywallTrigger}
+        triggerSource={`setup_${paywallTrigger}`}
       />
     </div>
   );
