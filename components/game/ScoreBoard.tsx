@@ -37,16 +37,17 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({
               className={clsx(
                 'py-2 px-3 rounded-xl border flex flex-col items-center transition-all',
                 isActive
-                  ? 'bg-indigo-950/60 border-indigo-500/60 shadow-md shadow-indigo-500/15 ring-1 ring-indigo-500/30'
-                  : 'bg-slate-950/40 border-slate-800/60 opacity-75'
+                  ? 'bg-slate-900 border-amber-500/80 shadow-lg shadow-amber-500/10 ring-2 ring-amber-500/40'
+                  : 'bg-slate-950/60 border-slate-800/80 opacity-70'
               )}
+              style={isActive ? { borderColor: team.color, boxShadow: `0 4px 14px ${team.color}33` } : undefined}
             >
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span
-                  className="w-2.5 h-2.5 rounded-full"
+                  className="w-2.5 h-2.5 rounded-full ring-2 ring-white/20"
                   style={{ backgroundColor: team.color }}
                 />
-                <span className="text-[11px] font-bold text-slate-200 truncate max-w-[70px]">
+                <span className="text-[11px] font-black text-slate-200 truncate max-w-[70px]">
                   {team.name}
                 </span>
               </div>

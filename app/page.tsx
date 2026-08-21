@@ -123,7 +123,7 @@ export default function HomePage() {
       {/* 1. TOP HEADER BAR */}
       <header className="flex items-center justify-between py-1 shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-black text-xl border-2 border-white/20">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/25 text-slate-950 font-black text-xl border border-amber-300/40">
             T
           </div>
           <div>
@@ -131,12 +131,12 @@ export default function HomePage() {
               <h1 className="text-lg font-black tracking-tight text-white leading-tight">
                 DVT TABU
               </h1>
-              <span className="text-[9px] bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black px-1.5 py-0.2 rounded-md uppercase tracking-wider shadow-sm">
-                PRO
+              <span className="text-[9px] bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black px-1.5 py-0.2 rounded uppercase tracking-wider shadow-sm">
+                2026
               </span>
             </div>
-            <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest block">
-              Kelime Arenası
+            <span className="text-[10px] text-amber-400/90 font-black uppercase tracking-widest block">
+              Masa Arenası
             </span>
           </div>
         </div>
@@ -145,7 +145,7 @@ export default function HomePage() {
           {/* User Profile Pill */}
           <button
             onClick={() => setIsProfileDrawerOpen(true)}
-            className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-2xl btn-3d-dark text-slate-200"
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl btn-3d-dark text-slate-200"
             title="Profil & Kariyer"
           >
             {isMounted && userAvatar ? (
@@ -153,7 +153,7 @@ export default function HomePage() {
             ) : (
               <div 
                 suppressHydrationWarning
-                className="w-5 h-5 rounded-lg bg-indigo-500 text-white font-black text-[11px] flex items-center justify-center"
+                className="w-5 h-5 rounded-lg bg-amber-500 text-slate-950 font-black text-[11px] flex items-center justify-center"
               >
                 {isMounted ? (guestName?.charAt(0)?.toUpperCase() || 'M') : 'M'}
               </div>
@@ -169,19 +169,19 @@ export default function HomePage() {
           {/* Sound Toggle */}
           <button
             onClick={handleSoundToggle}
-            className="p-2 rounded-2xl btn-3d-dark text-slate-300 hover:text-white"
+            className="p-2 rounded-xl btn-3d-dark text-slate-300 hover:text-white"
             title={soundEnabled ? 'Sesi Kapat' : 'Sesi Aç'}
           >
-            {soundEnabled ? <Volume2 className="w-4 h-4 text-indigo-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+            {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
           </button>
 
           {/* Settings / Rules Modal Trigger */}
           <button
             onClick={() => setIsRuleModalOpen(true)}
-            className="p-2 rounded-2xl btn-3d-dark text-slate-300 hover:text-white"
+            className="p-2 rounded-xl btn-3d-dark text-slate-300 hover:text-white"
             title="Kurallar & Ayarlar"
           >
-            <Sliders className="w-4 h-4 text-indigo-400" />
+            <Sliders className="w-4 h-4 text-amber-400" />
           </button>
         </div>
       </header>
@@ -192,12 +192,12 @@ export default function HomePage() {
         <ActiveGameBanner />
 
         {/* HERO ARENA CARD: OYUN BAŞLAT (Centerpiece of the Screen) */}
-        <div className="p-5 rounded-3xl card-arcade flex flex-col gap-4 relative overflow-hidden bg-gradient-to-b from-slate-850 to-slate-950">
+        <div className="p-5 rounded-2xl card-arcade flex flex-col gap-4 relative overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800/80 shadow-2xl">
           {/* Hero Decorative Header */}
           <div className="flex items-center justify-between">
-            <div className="inline-flex items-center gap-1.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] font-black py-1 px-3 rounded-full">
-              <Flame className="w-3 h-3 text-amber-400 fill-amber-400" />
-              <span>TÜRKİYE'NİN EN İYİ TABU ARENASI</span>
+            <div className="inline-flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-black py-1 px-3 rounded-lg">
+              <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+              <span>DİJİTAL PARTİ & TABU ARENASI</span>
             </div>
 
             <span className="text-[10px] font-black text-slate-400 font-mono">
@@ -209,17 +209,17 @@ export default function HomePage() {
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
               Yasakları Aş, Takımını <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 inline-flex items-center gap-1.5">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 inline-flex items-center gap-1.5">
                 Zirveye Taşı! <Trophy className="w-5 h-5 text-amber-400 inline-block" />
               </span>
             </h2>
-            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              Arkadaşlarınla tek cihazda toplanın veya online yarışın!
+            <p className="text-xs text-slate-400 mt-1 leading-relaxed font-medium">
+              Arkadaşlarınla tek cihazda toplanın veya online odalarda kapışın!
             </p>
           </div>
 
           {/* Player Name Strip */}
-          <div className="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-slate-950/80 border border-slate-800">
+          <div className="flex items-center justify-between gap-2 p-1.5 rounded-xl bg-slate-950/80 border border-slate-800">
             <div className="flex items-center gap-1.5 px-2 flex-1 min-w-0">
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0">Oyuncu:</span>
               <input
@@ -244,9 +244,9 @@ export default function HomePage() {
             {!isLoggedIn ? (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="text-[10px] font-black text-indigo-300 bg-indigo-500/20 hover:bg-indigo-500/30 py-1.5 px-3 rounded-xl border border-indigo-500/30 flex items-center gap-1 shrink-0 transition-all"
+                className="text-[10px] font-black text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 py-1.5 px-3 rounded-lg border border-amber-500/30 flex items-center gap-1 shrink-0 transition-all"
               >
-                <Sparkles className="w-3 h-3 text-indigo-400" /> Giriş Yap
+                <Sparkles className="w-3 h-3 text-amber-400" /> Giriş Yap
               </button>
             ) : (
               <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 py-1 px-2.5 rounded-lg border border-emerald-500/20 shrink-0 inline-flex items-center gap-1">
@@ -260,7 +260,7 @@ export default function HomePage() {
             <button
               onClick={handleLaunchGameSetup}
               disabled={isCharging}
-              className="w-full py-4.5 rounded-2xl btn-3d-emerald text-white font-black text-lg sm:text-xl tracking-wider flex items-center justify-center gap-2.5 shadow-xl relative overflow-hidden select-none active:scale-[0.99] transition-transform"
+              className="w-full py-4 rounded-xl btn-3d-emerald text-white font-black text-lg sm:text-xl tracking-wider flex items-center justify-center gap-2.5 shadow-xl relative overflow-hidden select-none active:scale-[0.99] transition-transform"
             >
               {/* Charging / Filling Animation Bar */}
               {isCharging && (
@@ -273,7 +273,7 @@ export default function HomePage() {
               )}
 
               <Play className={`w-6 h-6 fill-white drop-shadow-md relative z-10 transition-transform ${isCharging ? 'scale-125' : ''}`} />
-              <span className="relative z-10">{isCharging ? 'HAZIRLANIYOR...' : 'OYUN BAŞLAT'}</span>
+              <span className="relative z-10">{isCharging ? 'HAZIRLANIYOR...' : 'OYUNU BAŞLAT'}</span>
             </button>
 
             {/* Bottom Summary Indicators (Including Team Count) */}
@@ -282,11 +282,11 @@ export default function HomePage() {
                 <Users className="w-3 h-3" /> {teams.length} Takım
               </span>
               <span>•</span>
-              <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3 text-indigo-400" /> {settings.turn_duration}s</span>
+              <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3 text-cyan-400" /> {settings.turn_duration}s</span>
               <span>•</span>
               <span className="inline-flex items-center gap-1"><RotateCcw className="w-3 h-3 text-amber-400" /> {settings.pass_limit >= 99 ? '∞' : settings.pass_limit} Pas</span>
               <span>•</span>
-              <span className="inline-flex items-center gap-1"><Trophy className="w-3 h-3 text-purple-400" /> {settings.total_rounds} Tur</span>
+              <span className="inline-flex items-center gap-1"><Trophy className="w-3 h-3 text-orange-400" /> {settings.total_rounds} Tur</span>
             </div>
           </div>
         </div>
@@ -296,13 +296,13 @@ export default function HomePage() {
           {/* Online Multiplayer Card */}
           <button
             onClick={() => router.push('/rooms')}
-            className="p-4 rounded-3xl card-arcade flex flex-col justify-between gap-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] group"
+            className="p-4 rounded-2xl card-arcade flex flex-col justify-between gap-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] group"
           >
             <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+              <div className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 group-hover:bg-cyan-600 group-hover:text-white transition-all">
                 <Radio className="w-5 h-5" />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full animate-pulse">
+              <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md animate-pulse">
                 Canlı
               </span>
             </div>
@@ -311,25 +311,25 @@ export default function HomePage() {
               <h3 className="text-sm font-black text-white flex items-center gap-1">
                 Çok Oyunculu <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition-colors" />
               </h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">Arkadaşlarınla online odalarda yarış</p>
+              <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Arkadaşlarınla online odalarda yarış</p>
             </div>
           </button>
 
           {/* Gemini AI Deck Studio Card */}
           <button
             onClick={() => setIsDeckModalOpen(true)}
-            className="p-4 rounded-3xl card-arcade flex flex-col justify-between gap-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] group"
+            className="p-4 rounded-2xl card-arcade flex flex-col justify-between gap-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] group"
           >
             <div className="flex items-center justify-between">
-              <div className="p-2.5 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30 group-hover:bg-purple-600 group-hover:text-white transition-all">
+              <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all">
                 <Sparkles className="w-5 h-5" />
               </div>
               {customCards.length > 0 ? (
-                <span className="text-[9px] font-black bg-purple-500 text-white px-2 py-0.5 rounded-full">
+                <span className="text-[9px] font-black bg-amber-500 text-slate-950 px-2 py-0.5 rounded-md">
                   +{customCards.length} Kart
                 </span>
               ) : (
-                <span className="text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full">
+                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md">
                   AI Stüdyo
                 </span>
               )}
@@ -339,7 +339,7 @@ export default function HomePage() {
               <h3 className="text-sm font-black text-white flex items-center gap-1">
                 Özel Deste Üret <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition-colors" />
               </h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">Yapay zeka ile kendi desteni yarat</p>
+              <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Yapay zeka ile kendi desteni yarat</p>
             </div>
           </button>
         </div>
@@ -353,7 +353,7 @@ export default function HomePage() {
       </main>
 
       {/* 5. BOTTOM NAVIGATION BAR */}
-      <footer className="flex items-center justify-between py-2 border-t border-slate-800/80 text-xs shrink-0">
+      <footer className="flex items-center justify-between py-2 border-t border-slate-800 text-xs shrink-0">
         <button
           onClick={() => setIsProfileDrawerOpen(true)}
           className="text-slate-400 hover:text-white flex items-center gap-1.5 font-bold transition-colors"
@@ -366,7 +366,7 @@ export default function HomePage() {
           onClick={() => setIsOnboardingOpen(true)}
           className="text-slate-400 hover:text-white flex items-center gap-1.5 font-bold transition-colors"
         >
-          <HelpCircle className="w-4 h-4 text-indigo-400" />
+          <HelpCircle className="w-4 h-4 text-amber-400" />
           <span>Nasıl Oynanır?</span>
         </button>
 

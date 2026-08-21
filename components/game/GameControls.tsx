@@ -61,15 +61,15 @@ export const GameControls: React.FC<GameControlsProps> = ({
       <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
         {/* 1. Pas Butonu */}
         <div className="flex flex-col items-center gap-1.5">
-          <div className="bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black py-0.5 px-2.5 rounded-full shadow-sm">
+          <div className="bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black py-0.5 px-2.5 rounded-lg shadow-sm">
             {passCount} Pas
           </div>
           <button
             type="button"
             onClick={onPass}
             disabled={isPassDisabled}
-            className={`w-full py-4 px-2 rounded-2xl flex flex-col items-center justify-center gap-0.5 text-white disabled:opacity-40 disabled:cursor-not-allowed select-none ${
-              isPassDisabled ? 'bg-slate-800 border-b-2 border-slate-900' : 'btn-3d-amber'
+            className={`w-full py-4 px-2 rounded-xl flex flex-col items-center justify-center gap-0.5 text-white disabled:opacity-40 disabled:cursor-not-allowed select-none ${
+              isPassDisabled ? 'bg-slate-900 border-b-2 border-slate-950 text-slate-500' : 'btn-3d-amber'
             }`}
           >
             <FastForward className="w-6 h-6 stroke-[2.5]" />
@@ -82,15 +82,15 @@ export const GameControls: React.FC<GameControlsProps> = ({
 
         {/* 2. Tabu / Cız Butonu */}
         <div className="flex flex-col items-center gap-1.5">
-          <div className="bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-black py-0.5 px-2.5 rounded-full shadow-sm">
+          <div className="bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-black py-0.5 px-2.5 rounded-lg shadow-sm">
             {tabuCount} Tabu
           </div>
           <button
             type="button"
             onClick={onBuzzer}
             disabled={isTabuDisabled}
-            className={`w-full py-4 px-2 rounded-2xl flex flex-col items-center justify-center gap-0.5 text-white disabled:opacity-40 disabled:cursor-not-allowed select-none ${
-              isTabuDisabled ? 'bg-slate-800 border-b-2 border-slate-900' : 'btn-3d-rose'
+            className={`w-full py-4 px-2 rounded-xl flex flex-col items-center justify-center gap-0.5 text-white disabled:opacity-40 disabled:cursor-not-allowed select-none ${
+              isTabuDisabled ? 'bg-slate-900 border-b-2 border-slate-950 text-slate-500' : 'btn-3d-rose'
             }`}
           >
             <AlertOctagon className="w-6 h-6 stroke-[2.5]" />
@@ -109,13 +109,13 @@ export const GameControls: React.FC<GameControlsProps> = ({
 
         {/* 3. Doğru Butonu */}
         <div className="flex flex-col items-center gap-1.5">
-          <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black py-0.5 px-2.5 rounded-full shadow-sm">
+          <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black py-0.5 px-2.5 rounded-lg shadow-sm">
             {correctCount} Doğru
           </div>
           <button
             type="button"
             onClick={onCorrect}
-            className="w-full py-4 px-2 rounded-2xl btn-3d-emerald text-white flex flex-col items-center justify-center gap-0.5 select-none"
+            className="w-full py-4 px-2 rounded-xl btn-3d-emerald text-white flex flex-col items-center justify-center gap-0.5 select-none"
           >
             <Check className="w-6 h-6 stroke-[3.5]" />
             <span className="text-xs uppercase font-black tracking-wider">Doğru!</span>

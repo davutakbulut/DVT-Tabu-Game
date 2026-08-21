@@ -108,8 +108,8 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
   if (!data && !loading) return null;
 
   return (
-    <div className="w-full rounded-3xl bg-gradient-to-r from-indigo-950/80 via-slate-900 to-purple-950/80 border border-indigo-500/30 shadow-xl relative overflow-hidden backdrop-blur-md transition-all duration-300">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="w-full rounded-2xl bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-900 border border-amber-500/30 shadow-xl relative overflow-hidden backdrop-blur-md transition-all duration-300">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Floating Success Toast */}
       <AnimatePresence>
@@ -118,7 +118,7 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute top-3 inset-x-3 z-30 bg-emerald-600 text-white text-xs font-black p-2.5 rounded-2xl shadow-lg flex items-center justify-between gap-2 border border-emerald-400/50"
+            className="absolute top-3 inset-x-3 z-30 bg-emerald-600 text-white text-xs font-black p-2.5 rounded-xl shadow-lg flex items-center justify-between gap-2 border border-emerald-400/50"
           >
             <div className="flex items-center gap-1.5 truncate">
               <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
@@ -135,19 +135,19 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
       <div
         onClick={() => setIsExpanded(!isExpanded)}
         className={`p-4 flex items-center justify-between cursor-pointer select-none transition-colors hover:bg-white/[0.02] ${
-          isExpanded ? 'border-b border-indigo-500/20' : ''
+          isExpanded ? 'border-b border-amber-500/20' : ''
         }`}
       >
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">
+          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-wider text-indigo-300 block leading-tight">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-300 block leading-tight">
                 Günün AI Oyun Bülteni
               </span>
-              <span className="text-[9px] bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded-full border border-indigo-500/30">
+              <span className="text-[9px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-md border border-amber-500/30">
                 {isExpanded ? 'Açık' : 'Taktikleri Gör'}
               </span>
             </div>
@@ -164,12 +164,12 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors disabled:opacity-50"
             title="Yenile"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-amber-400' : ''}`} />
           </button>
           
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1.5 rounded-lg text-indigo-300 hover:text-white hover:bg-indigo-500/20 transition-colors"
+            className="p-1.5 rounded-lg text-amber-300 hover:text-white hover:bg-amber-500/20 transition-colors"
           >
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
@@ -197,7 +197,7 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
                     <h4 className="text-base font-extrabold text-white leading-snug">
                       {data.headline}
                     </h4>
-                    <p className="text-xs text-indigo-200/80 mt-1">
+                    <p className="text-xs text-amber-200/80 mt-1 font-medium">
                       {data.daily_vibe}
                     </p>
                   </div>
@@ -218,9 +218,9 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
                           return (
                             <div
                               key={idx}
-                              className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-2.5 ${
+                              className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between gap-2.5 ${
                                 isCurrentlyActive
-                                  ? 'bg-indigo-600/20 border-indigo-500 shadow-md shadow-indigo-500/15'
+                                  ? 'bg-amber-500/15 border-amber-500 shadow-md shadow-amber-500/15'
                                   : 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
                               }`}
                             >
@@ -230,7 +230,7 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
                                     <Zap className={`w-3.5 h-3.5 ${isCurrentlyActive ? 'text-amber-400' : 'text-slate-400'}`} />
                                     <span className="text-xs font-black text-white">{mode.title}</span>
                                   </div>
-                                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                                  <p className="text-[11px] text-slate-400 mt-1 leading-snug font-medium">
                                     {mode.reason}
                                   </p>
                                 </div>
@@ -245,7 +245,7 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
                               {/* Rule Parameters Badges */}
                               <div className="flex items-center gap-2 text-[10px] font-bold text-slate-300 pt-1 border-t border-slate-800/60">
                                 <span className="flex items-center gap-1 bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800">
-                                  <Clock className="w-3 h-3 text-indigo-400" />
+                                  <Clock className="w-3 h-3 text-cyan-400" />
                                   {mode.recommended_duration_seconds}sn Süre
                                 </span>
                                 <span className="flex items-center gap-1 bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800">
@@ -258,10 +258,10 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
                               <button
                                 onClick={() => handleSelectMode(mode)}
                                 disabled={isCurrentlyActive}
-                                className={`w-full text-xs font-black py-2 rounded-xl border transition-all flex items-center justify-center gap-1.5 ${
+                                className={`w-full text-xs font-black py-2 rounded-lg border transition-all flex items-center justify-center gap-1.5 ${
                                   isCurrentlyActive
                                     ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 cursor-default'
-                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white border-transparent shadow-md shadow-indigo-500/20'
+                                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-600 shadow-md shadow-amber-500/20'
                                 }`}
                               >
                                 {isCurrentlyActive ? (
@@ -281,13 +281,13 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
 
                   {/* Featured Card of the Day (Interactive) */}
                   {data.featured_card_of_the_day && (
-                    <div className="flex items-center justify-between p-3 rounded-2xl bg-indigo-950/40 border border-indigo-500/25 text-xs">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-amber-950/30 border border-amber-500/25 text-xs">
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-xl bg-amber-500/20 text-amber-400">
+                        <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
                           <Trophy className="w-4 h-4" />
                         </div>
                         <div>
-                          <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block">Günün Bonus Kartı</span>
+                          <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">Günün Bonus Kartı</span>
                           <span className="font-black text-white text-sm">
                             {data.featured_card_of_the_day.main_word}
                           </span>
@@ -297,17 +297,17 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setPreviewCard(data.featured_card_of_the_day)}
-                          className="text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 py-1.5 px-2.5 rounded-xl border border-slate-700/60"
+                          className="text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-700/60"
                         >
                           Yasaklıları Gör
                         </button>
                         <button
                           onClick={handleAddFeaturedCard}
                           disabled={cardAdded}
-                          className={`text-[11px] font-black py-1.5 px-3 rounded-xl border transition-all flex items-center gap-1 ${
+                          className={`text-[11px] font-black py-1.5 px-3 rounded-lg border transition-all flex items-center gap-1 ${
                             cardAdded
                               ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
-                              : 'bg-indigo-600 hover:bg-indigo-500 text-white border-transparent shadow-sm'
+                              : 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-600 shadow-sm'
                           }`}
                         >
                           {cardAdded ? (
@@ -345,18 +345,18 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-xs bg-slate-900 border border-indigo-500/40 rounded-3xl p-5 shadow-2xl z-10 text-center"
+              className="relative w-full max-w-xs bg-slate-900 border border-amber-500/40 rounded-2xl p-5 shadow-2xl z-10 text-center"
             >
               <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-3">
-                <span className="text-[10px] uppercase font-bold text-indigo-400">Günün Kartı Önizleme</span>
+                <span className="text-[10px] uppercase font-bold text-amber-400">Günün Kartı Önizleme</span>
                 <button onClick={() => setPreviewCard(null)} className="text-slate-400 hover:text-white">
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Card Face */}
-              <div className="bg-gradient-to-b from-indigo-900/60 to-slate-950 border border-indigo-500/30 rounded-2xl p-4 mb-3">
-                <span className="text-xs uppercase font-extrabold text-indigo-300 block mb-1">
+              <div className="bg-gradient-to-b from-amber-950/40 to-slate-950 border border-amber-500/30 rounded-xl p-4 mb-3">
+                <span className="text-xs uppercase font-extrabold text-amber-300 block mb-1">
                   {previewCard.category || 'Teknoloji'}
                 </span>
                 <h3 className="text-2xl font-black text-white tracking-wider mb-3">
@@ -376,7 +376,7 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
                   handleAddFeaturedCard();
                   setPreviewCard(null);
                 }}
-                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-md shadow-indigo-500/25"
+                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/25"
               >
                 Bu Kartı Bugünkü Oyunuma Dahil Et
               </button>
