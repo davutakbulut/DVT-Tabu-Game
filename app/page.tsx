@@ -128,7 +128,11 @@ export default function HomePage() {
       {/* Hero / Main Section */}
       <div className="flex-1 flex flex-col justify-center gap-5 my-4">
         {/* Gemini AI Daily Insights Banner */}
-        <AiDailyBanner onApplyMode={handleApplyAiMode} />
+        <AiDailyBanner
+          currentSettings={settings}
+          onApplyMode={handleApplyAiMode}
+          onAddBonusCard={(card) => setCustomCards((prev) => [...prev, card])}
+        />
 
         {/* Player Name Input */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 flex items-center gap-3">
