@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 const DEFAULT_MONETIZATION_CONFIG = {
   paywall_games_threshold: 2,
   ai_deck_paywall_enabled: true,
   vip_room_paywall_enabled: false,
-  monthly_price: 49,
-  annual_price: 349,
+  paywall_3plus_teams_enabled: true,
+  paywall_custom_rules_enabled: false,
+  paywall_vip_decks_enabled: false,
+  monthly_price: 49.99,
+  annual_price: 349.99,
   active_campaign_title: '%40 Lansman Fırsatı',
   campaign_badge: 'SINIRLI SÜRE',
   updated_at: new Date().toISOString(),
@@ -23,13 +28,11 @@ export async function GET() {
 
       if (!error && data?.data) {
         return NextResponse.json({
-          config: data.data,
+          config: { ...DEFAULT_MONETIZATION_CONFIG, ...data.data },
           updated_at: data.updated_at,
         });
       }
-    } catch {
-      // Fallback
-    }
+    } catch {}
   }
 
   return NextResponse.json({

@@ -8,6 +8,7 @@ import { useUserStore } from '@/stores/userStore';
 import { Button } from '@/components/ui/Button';
 import { AiDailyBanner } from '@/components/ai/AiDailyBanner';
 import { DeckGeneratorModal } from '@/components/ai/DeckGeneratorModal';
+import { GameSetupModal } from '@/components/game/GameSetupModal';
 import { RuleSettingsModal } from '@/components/game/RuleSettingsModal';
 import { ChangelogModal } from '@/components/ui/ChangelogModal';
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
@@ -50,6 +51,7 @@ export default function HomePage() {
   } = useUserStore();
 
   const [isMounted, setIsMounted] = useState(false);
+  const [isGameSetupOpen, setIsGameSetupOpen] = useState(false);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
@@ -74,10 +76,7 @@ export default function HomePage() {
   };
 
   const handleStartSingleDevice = () => {
-    leaveRoom();
-    initializeGame(teams, settings, customCards);
-    soundManager.play('start');
-    router.push('/play');
+    setIsGameSetupOpen(true);
   };
 
   const handleApplyAiMode = (mode: any) => {
@@ -144,9 +143,9 @@ export default function HomePage() {
           </button>
 
           <button
-            onClick={() => setIsRuleModalOpen(true)}
+            onClick={() => setIsGameSetupOpen(true)}
             className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
-            title="Kural ve Ayarlar"
+            title="Oyun Ayarları & Kurulum"
           >
             <Sliders className="w-4 h-4 text-indigo-400" />
           </button>
@@ -196,18 +195,18 @@ export default function HomePage() {
 
         {/* Game Mode Actions */}
         <div className="flex flex-col gap-3">
-          {/* Single Device Mode */}
+          {/* Game Start Mode */}
           <Button
             variant="primary"
             size="lg"
-            onClick={handleStartSingleDevice}
+            onClick={() => setIsGameSetupOpen(true)}
             fullWidth
-            className="py-4 font-black tracking-wide text-base shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-2 relative overflow-hidden group"
+            className="py-4 font-black tracking-wide text-base bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:opacity-95 shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-2 relative overflow-hidden group"
           >
             <Play className="w-5 h-5 fill-current" />
-            Tek Cihazda Oyna
+            Oyun Başlat
             <span className="text-[10px] uppercase font-bold bg-white/20 px-2 py-0.5 rounded-full ml-1">
-              Hızlı Parti
+              Özelleştirilebilir
             </span>
           </Button>
 
@@ -257,32 +256,31 @@ export default function HomePage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsOnboardingOpen(true)}
-            className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors"
+            className="hover:text-slate-300 transition-colors"
           >
-            <HelpCircle className="w-3.5 h-3.5" /> Nasıl Oynanır?
+            Nasıl Oynanır?
           </button>
-
           <button
             onClick={() => router.push('/admin')}
-            className="p-1 rounded-lg text-slate-700 hover:text-slate-400 transition-colors"
-            title="Yönetici Portalı"
+            className="hover:text-indigo-400 flex items-center gap-1 transition-colors"
+            title="Yönetici Paneli"
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
+            <ShieldCheck className="w-3.5 h-3.5" /> Yönetici
           </button>
         </div>
       </footer>
 
-      {/* Modals & Drawers */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+      {/* Modals & Wizards */}
+      <GameSetupModal
+        isOpen={isGameSetupOpen}
+        onClose={() => setIsGameSetupOpen(false)}
       />
 
       <ProfileDrawer
         isOpen={isProfileDrawerOpen}
         onClose={() => setIsProfileDrawerOpen(false)}
         onOpenAuth={() => setIsAuthModalOpen(true)}
-        onOpenRules={() => setIsRuleModalOpen(true)}
+        onOpenRules={() => setIsGameSetupOpen(true)}
         onOpenPaywall={() => setIsPaywallOpen(true)}
       />
 

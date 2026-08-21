@@ -97,6 +97,9 @@ export default function AdminPortalPage() {
     paywall_games_threshold: 2,
     ai_deck_paywall_enabled: true,
     vip_room_paywall_enabled: false,
+    paywall_3plus_teams_enabled: true,
+    paywall_custom_rules_enabled: false,
+    paywall_vip_decks_enabled: false,
     monthly_price: 49.99,
     annual_price: 349.99,
     active_campaign_title: '%40 Lansman Fırsatı',
@@ -1375,6 +1378,32 @@ export default function AdminPortalPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              <label className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-bold text-white block">3+ Takım Kilidi (Paywall)</span>
+                  <span className="text-[10px] text-slate-400">2 takım ücretsiz, 3. ve sonrası için Pro talep et</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={strategyConfig.paywall_3plus_teams_enabled}
+                  onChange={(e) => setStrategyConfig({ ...strategyConfig, paywall_3plus_teams_enabled: e.target.checked })}
+                  className="rounded accent-amber-500 w-5 h-5 cursor-pointer"
+                />
+              </label>
+
+              <label className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-bold text-white block">VIP & Meme Deste Kilidi</span>
+                  <span className="text-[10px] text-slate-400">2026 Memeler destesi seçiminde Pro talep et</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={strategyConfig.paywall_vip_decks_enabled}
+                  onChange={(e) => setStrategyConfig({ ...strategyConfig, paywall_vip_decks_enabled: e.target.checked })}
+                  className="rounded accent-amber-500 w-5 h-5 cursor-pointer"
+                />
+              </label>
+
               <label className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
                 <div>
                   <span className="text-xs font-bold text-white block">Gemini AI Deste Limiti</span>
