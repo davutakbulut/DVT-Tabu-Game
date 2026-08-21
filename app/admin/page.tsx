@@ -73,9 +73,11 @@ import { sendLog } from '@/lib/logger';
 import { DEFAULT_ONBOARDING_STEPS, OnboardingStepItem } from '@/types/onboarding';
 import { AdConfig, AdItem, DEFAULT_AD_CONFIG, DEFAULT_ADS } from '@/types/ads';
 import { LivePresenceRadar } from '@/components/admin/LivePresenceRadar';
+import { UsersManager } from '@/components/admin/UsersManager';
 
 export type AdminTabId =
   | 'live_radar'
+  | 'users'
   | 'cards'
   | 'online_rooms'
   | 'game_inspector'
@@ -111,7 +113,7 @@ function AdminPortalContent() {
     setHasMounted(true);
 
     const validTabs: AdminTabId[] = [
-      'live_radar', 'cards', 'online_rooms', 'game_inspector',
+      'live_radar', 'users', 'cards', 'online_rooms', 'game_inspector',
       'logs', 'monetization', 'ads', 'analytics', 'versions', 'onboarding'
     ];
 
@@ -998,6 +1000,7 @@ function AdminPortalContent() {
       <nav className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {[
           { id: 'live_radar', label: 'Canlı Radar & Anlık Takip', icon: <Radio className="w-4 h-4 text-emerald-400 animate-pulse" /> },
+          { id: 'users', label: 'Kullanıcılar & Üye CRM', icon: <Users className="w-4 h-4 text-indigo-400" /> },
           { id: 'cards', label: 'Kart & Deste Havuzu (CMS)', icon: <Layers className="w-4 h-4" /> },
           { id: 'online_rooms', label: 'Çok Oyunculu Odalar', icon: <Globe className="w-4 h-4" /> },
           { id: 'game_inspector', label: 'Oyun & Kelime Raporu', icon: <Gamepad2 className="w-4 h-4" /> },
@@ -1031,6 +1034,11 @@ function AdminPortalContent() {
       {/* TAB: CANLI İZLEME & GERÇEK ZAMANLI RADAR */}
       {activeTab === 'live_radar' && (
         <LivePresenceRadar />
+      )}
+
+      {/* TAB: KAYITLI KULLANICILAR & CRM */}
+      {activeTab === 'users' && (
+        <UsersManager />
       )}
 
       {/* TAB: MULTIPLAYER ROOMS & LIVE LOBBIES INSPECTOR */}
