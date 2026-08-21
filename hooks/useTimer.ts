@@ -31,16 +31,20 @@ export const useTimer = ({ duration, isRunning, onTick, onTimeout }: UseTimerOpt
       setTimeRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          if (onTimeoutRef.current) {
-            onTimeoutRef.current();
-          }
+          setTimeout(() => {
+            if (onTimeoutRef.current) {
+              onTimeoutRef.current();
+            }
+          }, 0);
           return 0;
         }
 
         const next = prev - 1;
-        if (onTickRef.current) {
-          onTickRef.current(next);
-        }
+        setTimeout(() => {
+          if (onTickRef.current) {
+            onTickRef.current(next);
+          }
+        }, 0);
 
         // Ticking audio in last 10 seconds
         if (next <= 10 && next > 0) {
