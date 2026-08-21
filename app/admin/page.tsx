@@ -66,8 +66,8 @@ export default function AdminPortalPage() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
 
-  // Active Tab: 'analytics' | 'versions' | 'monetization' | 'cards' | 'onboarding'
-  const [activeTab, setActiveTab] = useState<'analytics' | 'monetization' | 'versions' | 'cards' | 'onboarding'>('cards');
+  // Active Tab: 'cards' | 'monetization' | 'analytics' | 'versions' | 'onboarding'
+  const [activeTab, setActiveTab] = useState<'cards' | 'monetization' | 'analytics' | 'versions' | 'onboarding'>('cards');
 
   // Analytics Data
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -377,7 +377,6 @@ export default function AdminPortalPage() {
     const parsedCards: any[] = [];
 
     lines.forEach((line) => {
-      // Expecting: MAIN_WORD: FORBIDDEN1, FORBIDDEN2, FORBIDDEN3, FORBIDDEN4, FORBIDDEN5
       if (line.includes(':')) {
         const [main, forbiddenPart] = line.split(':');
         const taboos = forbiddenPart.split(',').map((t) => t.trim().toUpperCase()).filter(Boolean);
@@ -434,6 +433,20 @@ export default function AdminPortalPage() {
         setEditingCard(null);
       }
     } catch {}
+  };
+
+  // Dynamic Deck Icon Helper
+  const renderDeckIcon = (iconName: string, className = 'w-5 h-5') => {
+    switch (iconName) {
+      case 'Film': return <Film className={className} />;
+      case 'Trophy': return <Trophy className={className} />;
+      case 'Cpu': return <Cpu className={className} />;
+      case 'Utensils': return <Utensils className={className} />;
+      case 'History': return <History className={className} />;
+      case 'Globe': return <Globe className={className} />;
+      case 'Flame': return <Flame className={className} />;
+      default: return <Sparkles className={className} />;
+    }
   };
 
   const summary = analyticsData?.summary || {
@@ -510,52 +523,58 @@ export default function AdminPortalPage() {
   // 2. Full Admin Dashboard
   return (
     <div className="min-h-screen p-4 max-w-4xl mx-auto w-full text-slate-200 flex flex-col gap-5">
-      {/* Admin Header */}
-      <header className="flex items-center justify-between py-2 border-b border-slate-800 pb-4">
+      {/* Responsive Admin Header */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 border-b border-slate-800 pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-black">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 text-white font-black shrink-0">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-lg font-black text-white flex items-center gap-2">
+            <h1 className="text-base sm:text-lg font-black text-white leading-tight">
               DVT Tabu Yönetim Merkezi
             </h1>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-slate-400 block mt-0.5">
               Canlı Sistem, Desteler, Kelime Havuzu CMS & Analitik Kontrolü
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Action Button Group */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => {
               setNewPinValue('');
               setPinChangeSuccess(false);
               setIsChangePinOpen(true);
             }}
-            className="text-xs font-bold text-amber-300 hover:text-white bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 py-2 px-3 rounded-xl flex items-center gap-1.5 transition-colors"
+            className="text-xs font-bold text-amber-300 hover:text-white bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 py-2 px-3 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm"
             title="Yönetici PIN Kodunu Değiştir"
           >
-            <KeyRound className="w-3.5 h-3.5" /> PIN Değiştir
+            <KeyRound className="w-3.5 h-3.5" />
+            <span>PIN Değiştir</span>
           </button>
+          
           <button
             onClick={() => router.push('/')}
-            className="text-xs font-bold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 py-2 px-3 rounded-xl flex items-center gap-1.5"
+            className="text-xs font-bold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 py-2 px-3 rounded-xl flex items-center gap-1.5 transition-colors"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Oyuna Dön
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Oyuna Dön</span>
           </button>
+
           <button
             onClick={logout}
-            className="text-xs font-bold text-rose-400 hover:bg-rose-500/10 bg-slate-900 border border-rose-500/30 py-2 px-3 rounded-xl flex items-center gap-1.5"
+            className="text-xs font-bold text-rose-400 hover:bg-rose-500/10 bg-slate-900 border border-rose-500/30 py-2 px-3 rounded-xl flex items-center gap-1.5 transition-colors"
             title="Güvenli Çıkış"
           >
-            <LogOut className="w-3.5 h-3.5" /> Çıkış
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Çıkış</span>
           </button>
         </div>
       </header>
 
-      {/* Admin Navigation Tabs */}
-      <nav className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-900">
+      {/* Admin Main Navigation Tabs */}
+      <nav className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {[
           { id: 'cards', label: 'Kart & Deste Havuzu (CMS)', icon: <Layers className="w-4 h-4" /> },
           { id: 'monetization', label: 'Monetizasyon & Paywall', icon: <Crown className="w-4 h-4" /> },
@@ -566,14 +585,14 @@ export default function AdminPortalPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 py-2.5 px-4 rounded-2xl text-xs font-black transition-all shrink-0 ${
+            className={`flex items-center gap-2 py-2.5 px-4 rounded-2xl text-xs font-black transition-all shrink-0 whitespace-nowrap ${
               activeTab === tab.id
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 border border-indigo-400/30'
                 : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800/80'
             }`}
           >
             {tab.icon}
-            {tab.label}
+            <span>{tab.label}</span>
           </button>
         ))}
       </nav>
@@ -581,9 +600,9 @@ export default function AdminPortalPage() {
       {/* TAB: CARDS & DECKS CMS */}
       {activeTab === 'cards' && (
         <div className="flex flex-col gap-4">
-          {/* Sub-Tabs */}
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <div className="flex items-center gap-1.5">
+          {/* Sub-Tabs Bar & Quick Action */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/60 p-2 rounded-2xl border border-slate-800/80">
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5">
               {[
                 { id: 'decks', label: '📁 Desteler & Kategoriler' },
                 { id: 'cards', label: '🗂️ Kelime Havuzu & Arama' },
@@ -593,10 +612,10 @@ export default function AdminPortalPage() {
                 <button
                   key={sub.id}
                   onClick={() => setCmsSubTab(sub.id as any)}
-                  className={`py-1.5 px-3 rounded-xl text-xs font-black transition-all ${
+                  className={`py-2 px-3 rounded-xl text-xs font-black transition-all text-center sm:text-left ${
                     cmsSubTab === sub.id
-                      ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
                   }`}
                 >
                   {sub.label}
@@ -609,7 +628,7 @@ export default function AdminPortalPage() {
                 variant="primary"
                 size="sm"
                 onClick={() => setIsNewDeckOpen(true)}
-                className="text-xs py-1 px-2.5"
+                className="text-xs py-2 px-3 font-bold bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 self-end sm:self-auto"
               >
                 <Plus className="w-3.5 h-3.5 mr-1" /> Yeni Deste Oluştur
               </Button>
@@ -625,17 +644,17 @@ export default function AdminPortalPage() {
                     key={deck.id}
                     className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
                       deck.is_active
-                        ? 'bg-slate-900/90 border-slate-800'
+                        ? 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
                         : 'bg-slate-950/60 border-slate-900 opacity-60'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-3">
                         <div
-                          className="w-10 h-10 rounded-2xl flex items-center justify-center font-black text-white shadow-md"
+                          className="w-11 h-11 rounded-2xl flex items-center justify-center font-black text-white shadow-md shrink-0"
                           style={{ backgroundColor: deck.color || '#6366f1' }}
                         >
-                          <Layers className="w-5 h-5" />
+                          {renderDeckIcon(deck.icon)}
                         </div>
                         <div>
                           <h4 className="text-sm font-black text-white leading-snug">{deck.name}</h4>
@@ -648,7 +667,7 @@ export default function AdminPortalPage() {
                       {/* Active/Passive Switch */}
                       <button
                         onClick={() => handleToggleDeck(deck.id, deck.is_active)}
-                        className={`text-xs font-black px-2.5 py-1 rounded-xl border transition-all flex items-center gap-1 ${
+                        className={`text-xs font-black px-2.5 py-1 rounded-xl border transition-all flex items-center gap-1 shrink-0 ${
                           deck.is_active
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                             : 'bg-slate-800 text-slate-400 border-slate-700'
@@ -659,7 +678,7 @@ export default function AdminPortalPage() {
                       </button>
                     </div>
 
-                    <p className="text-xs text-slate-400 leading-snug">{deck.description}</p>
+                    <p className="text-xs text-slate-400 leading-relaxed">{deck.description}</p>
 
                     <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[10px]">
                       <span className="text-slate-500 font-mono">ID: {deck.id}</span>
@@ -668,7 +687,7 @@ export default function AdminPortalPage() {
                           setSelectedDeckFilter(deck.id);
                           setCmsSubTab('cards');
                         }}
-                        className="text-indigo-400 hover:text-indigo-300 font-bold"
+                        className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1"
                       >
                         Kartları İncele & Düzenle ➔
                       </button>
@@ -682,33 +701,50 @@ export default function AdminPortalPage() {
           {/* SUB-TAB 2: CARDS WORD POOL EXPLORER */}
           {cmsSubTab === 'cards' && (
             <div className="flex flex-col gap-3">
-              {/* Search & Filter Bar */}
-              <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 flex items-center gap-2">
+              {/* Responsive Search & Filter Bar */}
+              <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                 <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                   <input
                     type="text"
                     value={searchCardQuery}
                     onChange={(e) => setSearchCardQuery(e.target.value)}
-                    placeholder="Kelime havuzunda ara (Örn: TİTANİK, KAHVE, ROBOT)..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    placeholder="Kelime havuzunda ara (Örn: SKIBIDI, TİTANİK, KAHVE)..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   />
+                  {searchCardQuery && (
+                    <button
+                      onClick={() => setSearchCardQuery('')}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-white p-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
-                <select
-                  value={selectedDeckFilter}
-                  onChange={(e) => setSelectedDeckFilter(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none"
-                >
-                  <option value="all">Tüm Desteler ({cards.length})</option>
-                  {decks.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedDeckFilter}
+                    onChange={(e) => setSelectedDeckFilter(e.target.value)}
+                    className="flex-1 sm:flex-none sm:w-64 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500 truncate"
+                  >
+                    <option value="all">Tüm Desteler ({cards.length} Kart)</option>
+                    {decks.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
 
-                <Button variant="outline" size="sm" onClick={fetchCards} disabled={loadingCards} className="text-xs">
-                  <RotateCcw className={`w-3.5 h-3.5 ${loadingCards ? 'animate-spin' : ''}`} />
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchCards}
+                    disabled={loadingCards}
+                    className="text-xs px-3 py-2.5 bg-slate-950 border-slate-800 hover:bg-slate-800"
+                    title="Yenile"
+                  >
+                    <RotateCcw className={`w-4 h-4 ${loadingCards ? 'animate-spin text-indigo-400' : ''}`} />
+                  </Button>
+                </div>
               </div>
 
               {/* Card List Grid */}
@@ -718,23 +754,23 @@ export default function AdminPortalPage() {
                     key={card.id}
                     className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-2.5 ${
                       card.is_active !== false
-                        ? 'bg-slate-900 border-slate-800'
+                        ? 'bg-slate-900 border-slate-800 hover:border-slate-700'
                         : 'bg-slate-950/60 border-slate-900 opacity-60'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base font-black text-white tracking-wider">{card.main_word}</span>
-                        <span className="text-[9px] font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-base font-black text-white tracking-wider truncate">{card.main_word}</span>
+                        <span className="text-[9px] font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30 shrink-0">
                           {card.category || 'Genel'}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => handleToggleCard(card.id, card.is_active !== false)}
-                          className={`p-1 rounded-lg text-xs font-bold ${
-                            card.is_active !== false ? 'text-emerald-400' : 'text-slate-500'
+                          className={`p-1 rounded-lg text-xs font-bold transition-colors ${
+                            card.is_active !== false ? 'text-emerald-400 hover:text-emerald-300' : 'text-slate-500 hover:text-slate-400'
                           }`}
                           title={card.is_active !== false ? 'Aktif (Yayında)' : 'Pasif (Gizli)'}
                         >
@@ -742,14 +778,14 @@ export default function AdminPortalPage() {
                         </button>
                         <button
                           onClick={() => setEditingCard(card)}
-                          className="p-1 text-slate-400 hover:text-white rounded-lg"
+                          className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors"
                           title="Düzenle"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteCard(card.id)}
-                          className="p-1 text-slate-500 hover:text-rose-400 rounded-lg"
+                          className="p-1 text-slate-500 hover:text-rose-400 rounded-lg transition-colors"
                           title="Sil"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -758,9 +794,9 @@ export default function AdminPortalPage() {
                     </div>
 
                     {/* Forbidden Words Pills */}
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5">
                       {(card.forbidden_words || []).map((w: string, i: number) => (
-                        <span key={i} className="text-[10px] font-bold bg-rose-950/30 text-rose-300 border border-rose-500/20 px-2 py-0.5 rounded-md">
+                        <span key={i} className="text-[10px] font-bold bg-rose-950/30 text-rose-300 border border-rose-500/20 px-2.5 py-0.5 rounded-md">
                           {w}
                         </span>
                       ))}
@@ -785,7 +821,7 @@ export default function AdminPortalPage() {
               )}
 
               <form onSubmit={handleSaveCard} className="flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] text-slate-400 block mb-1">Hedef Deste:</label>
                     <select
@@ -838,15 +874,13 @@ export default function AdminPortalPage() {
           {/* SUB-TAB 4: BULK IMPORT */}
           {cmsSubTab === 'bulk_import' && (
             <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-black text-indigo-300 uppercase tracking-wider flex items-center gap-2">
-                    <UploadCloud className="w-4 h-4 text-indigo-400" /> Toplu Kart İçe Aktarma (Bulk Import)
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Her satıra bir kart gelecek şekilde yapıştırın. Tek tıkla yüzlerce kartı desteye yükleyin.
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-xs font-black text-indigo-300 uppercase tracking-wider flex items-center gap-2">
+                  <UploadCloud className="w-4 h-4 text-indigo-400" /> Toplu Kart İçe Aktarma (Bulk Import)
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Her satıra bir kart gelecek şekilde yapıştırın. Tek tıkla yüzlerce kartı desteye yükleyin.
+                </p>
               </div>
 
               {bulkSuccessMsg && (
@@ -1335,7 +1369,7 @@ export default function AdminPortalPage() {
             <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
               <span className="text-[10px] font-bold text-slate-400">Bağlı Sosyal Hesap</span>
               <span className="text-xl font-black text-emerald-400 font-mono">1</span>
-              <span className="text-[9px] text-emerald-400 font-bold">Google / Apple</span>
+              <span className="text-[9px] text-emerald-400 font-bold">Google / Apple / FB</span>
             </div>
 
             <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
@@ -1414,7 +1448,7 @@ export default function AdminPortalPage() {
               <div>
                 <label className="text-[10px] text-slate-400 block mb-1">Deste Rengi:</label>
                 <div className="flex items-center gap-2">
-                  {['#6366f1', '#ec4899', '#10b981', '#06b6d4', '#f59e0b', '#8b5cf6', '#ef4444'].map((col) => (
+                  {['#6366f1', '#ec4899', '#10b981', '#06b6d4', '#f59e0b', '#8b5cf6', '#ef4444', '#f43f5e'].map((col) => (
                     <button
                       key={col}
                       type="button"
