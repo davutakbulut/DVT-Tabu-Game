@@ -6,8 +6,8 @@ node_modules/
 # Testing
 /coverage
 
-# Next.js
-/.next/
+# Next.js Build Cache Only
+/.next/cache/
 /out/
 
 # Production
@@ -19,7 +19,6 @@ node_modules/
 
 # Local env files
 .env*.local
-.env
 
 # Vercel
 .vercel
