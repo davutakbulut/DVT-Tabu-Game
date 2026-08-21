@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { AiDailyBanner } from '@/components/ai/AiDailyBanner';
 import { DeckGeneratorModal } from '@/components/ai/DeckGeneratorModal';
 import { RuleSettingsModal } from '@/components/game/RuleSettingsModal';
+import { ChangelogModal } from '@/components/ui/ChangelogModal';
 import { 
   Play, 
   Users, 
@@ -19,7 +20,8 @@ import {
   Flame, 
   HelpCircle,
   Trophy,
-  ShieldAlert
+  ShieldAlert,
+  History
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
 import { Card } from '@/types/game';
@@ -33,6 +35,7 @@ export default function HomePage() {
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
   const [isHowToPlayOpen, setIsHowToPlayOpen] = useState(false);
+  const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const [customCards, setCustomCards] = useState<Card[]>([]);
 
   const handleSoundToggle = () => {
@@ -186,7 +189,13 @@ export default function HomePage() {
 
       {/* Footer Info */}
       <footer className="flex items-center justify-between text-[11px] text-slate-500 py-2 border-t border-slate-900">
-        <span>Sürüm 1.0 (PWA Live)</span>
+        <button
+          onClick={() => setIsChangelogOpen(true)}
+          className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition-colors font-bold bg-indigo-500/10 py-1 px-2.5 rounded-lg border border-indigo-500/20"
+        >
+          <History className="w-3.5 h-3.5" /> Sürüm v1.0.0 (Yenilikler)
+        </button>
+
         <button
           onClick={() => setIsHowToPlayOpen(true)}
           className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors"
@@ -207,6 +216,11 @@ export default function HomePage() {
         isOpen={isDeckModalOpen}
         onClose={() => setIsDeckModalOpen(false)}
         onAddCards={handleAddAiCards}
+      />
+
+      <ChangelogModal
+        isOpen={isChangelogOpen}
+        onClose={() => setIsChangelogOpen(false)}
       />
 
       {/* How to play modal */}
