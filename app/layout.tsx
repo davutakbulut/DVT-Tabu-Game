@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { VersionProvider } from '@/components/version/VersionProvider';
 
 export const metadata: Metadata = {
   title: 'DVT Tabu Game — Çok Oyunculu Yasaklı Kelime Arenası',
@@ -34,9 +35,11 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
-        <main className="flex-1 flex flex-col safe-top safe-bottom">
-          {children}
-        </main>
+        <VersionProvider>
+          <main className="flex-1 flex flex-col safe-top safe-bottom">
+            {children}
+          </main>
+        </VersionProvider>
       </body>
     </html>
   );

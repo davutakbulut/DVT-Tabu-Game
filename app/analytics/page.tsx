@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { PaywallModal } from '@/components/monetization/PaywallModal';
+import { UpdateModal } from '@/components/version/UpdateModal';
+import { useVersion } from '@/components/version/VersionProvider';
 import { 
   ArrowLeft, 
   BarChart3, 
@@ -18,15 +20,32 @@ import {
   Activity,
   CheckCircle2,
   XCircle,
-  HelpCircle
+  History,
+  Send,
+  ArrowUpCircle,
+  Plus
 } from 'lucide-react';
 
 export default function AnalyticsDashboardPage() {
   const router = useRouter();
+  const { currentVersion, updateInfo, checkNow } = useVersion();
+
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isTestPaywallOpen, setIsTestPaywallOpen] = useState(false);
   const [paywallTriggerThreshold, setPaywallTriggerThreshold] = useState(2);
+
+  // Version Publishing Form State
+  const [newVersionTag, setNewVersionTag] = useState('1.2.0');
+  const [newVersionTitle, setNewVersionTitle] = useState('');
+  const [newVersionNotes, setNewVersionNotes] = useState('Yeni tema ve kart desteleri eklendi.\nPerformans optimizasyonları yapıldı.');
+  const [isMandatoryUpdate, setIsMandatoryUpdate] = useState(false);
+  const [minSupported, setMinSupported] = useState('1.1.0');
+  const [publishing, setPublishing] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
+
+  // Test Update Modal State
+  const [testUpdateModal, setTestUpdateModal] = useState<any | null>(null);
 
   const fetchMetrics = () => {
     setLoading(true);
@@ -40,6 +59,46 @@ export default function AnalyticsDashboardPage() {
   useEffect(() => {
     fetchMetrics();
   }, []);
+
+  const handlePublishVersion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newVersionTag || !newVersionTitle) return;
+
+    setPublishing(true);
+    setPublishSuccess(null);
+
+    const notesArray = newVersionNotes
+      .split('\n')
+      .map((n) => n.trim())
+      .filter(Boolean);
+
+    try {
+      const res = await fetch('/api/versions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          version: newVersionTag.startsWith('v') ? newVersionTag : `v${newVersionTag}`,
+          title: newVersionTitle,
+          changes: notesArray.map((text) => ({ type: 'feat', text })),
+          is_mandatory: isMandatoryUpdate,
+          min_supported_version: minSupported,
+        }),
+      });
+
+      if (res.ok) {
+        setPublishSuccess(`v${newVersionTag} sürümü başarıyla yayınlandı! Tüm kullanıcılara anında iletildi.`);
+        setNewVersionTitle('');
+        checkNow(true);
+      } else {
+        const err = await res.json();
+        alert(`Hata: ${err.error || 'Sürüm yayınlanamadı'}`);
+      }
+    } catch {
+      alert('Sürüm yayınlama servisine ulaşılamadı.');
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   const summary = data?.summary || {
     totalEvents: 0,
@@ -71,10 +130,10 @@ export default function AnalyticsDashboardPage() {
           </button>
           <div>
             <h1 className="text-lg font-black text-white flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-indigo-400" /> Analitik & Raporlama
+              <BarChart3 className="w-5 h-5 text-indigo-400" /> Analitik & Sürüm Yönetimi
             </h1>
             <span className="text-[11px] text-slate-400">
-              Kullanıcı Akışı, Drop-off & Monetizasyon Takibi
+              Kullanıcı Akışı, Drop-off & Sürüm Kontrol Mekanizması
             </span>
           </div>
         </div>
@@ -120,17 +179,176 @@ export default function AnalyticsDashboardPage() {
           <span className="text-[10px] text-slate-400">{summary.gamesAbandoned} Terk Edilen Maç</span>
         </div>
 
-        {/* Card 4: Paywall Conversion */}
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col gap-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-            <Crown className="w-3 h-3 text-amber-400" /> Pro Dönüşüm
+        {/* Card 4: Current Client Version */}
+        <div className="p-4 rounded-2xl bg-slate-900/90 border border-indigo-500/30 flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1">
+            <History className="w-3 h-3" /> İstemci Sürümü
           </span>
-          <span className="text-2xl font-black text-emerald-400 font-mono">%{summary.paywallConversion}</span>
-          <span className="text-[10px] text-slate-400">{summary.paywallViews} Görüntüleme</span>
+          <span className="text-2xl font-black text-indigo-300 font-mono">v{currentVersion}</span>
+          <span className="text-[10px] text-slate-400">Canlı Kontrol Aktif</span>
         </div>
       </div>
 
-      {/* 2. Funnel (Dönüşüm Hunisi) */}
+      {/* 2. Sürüm Kontrol & Güncelleme Yayınlama Servisi */}
+      <div className="p-5 rounded-3xl bg-indigo-950/30 border border-indigo-500/30 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+            <ArrowUpCircle className="w-4 h-4 text-indigo-400" /> Sürüm Güncelleme Kontrol Merkezi
+          </h3>
+          <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded-full border border-indigo-500/30">
+            Otomatik Takip Açık
+          </span>
+        </div>
+
+        {/* Canlı Sürüm Durumu */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col">
+            <span className="text-[10px] text-slate-400">Aktif İstemci:</span>
+            <span className="text-sm font-black text-white font-mono">v{currentVersion}</span>
+          </div>
+          <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col">
+            <span className="text-[10px] text-slate-400">En Son Sunucu Sürümü:</span>
+            <span className="text-sm font-black text-indigo-400 font-mono">
+              v{updateInfo?.latestVersion || currentVersion}
+            </span>
+          </div>
+          <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col">
+            <span className="text-[10px] text-slate-400">Min. Desteklenen Sürüm:</span>
+            <span className="text-sm font-black text-amber-400 font-mono">
+              v{updateInfo?.minSupportedVersion || '1.0.0'}
+            </span>
+          </div>
+        </div>
+
+        {/* Sürüm Test Butonları */}
+        <div className="flex items-center gap-2 pt-1">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              setTestUpdateModal({
+                hasUpdate: true,
+                isMandatory: false,
+                currentVersion,
+                latestVersion: '1.2.0',
+                releaseName: 'Örnek İsteğe Bağlı Güncelleme',
+                releaseNotes: ['Yeni oyun temaları eklendi.', 'Ses efektleri zenginleştirildi.'],
+                minSupportedVersion: '1.0.0',
+              })
+            }
+            className="text-xs flex-1"
+          >
+            İsteğe Bağlı Modal Test Et
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              setTestUpdateModal({
+                hasUpdate: true,
+                isMandatory: true,
+                currentVersion,
+                latestVersion: '2.0.0',
+                releaseName: 'Kritik Güvenlik & Veritabanı Güncellemesi',
+                releaseNotes: ['Veritabanı protokolü güncellendi.', 'Zorunlu PWA önbellek yenilemesi.'],
+                minSupportedVersion: '2.0.0',
+              })
+            }
+            className="text-xs flex-1 border border-rose-500/40 text-rose-300 hover:bg-rose-500/10"
+          >
+            Zorunlu Güncelleme Test Et
+          </Button>
+        </div>
+
+        {/* Yeni Sürüm Yayınla Formu */}
+        <form onSubmit={handlePublishVersion} className="pt-3 border-t border-indigo-500/20 flex flex-col gap-3">
+          <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+            <Plus className="w-3.5 h-3.5 text-indigo-400" /> Yeni Sürüm Yayınla (Canlıya Gönder)
+          </span>
+
+          {publishSuccess && (
+            <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              {publishSuccess}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-slate-400 block mb-1">Sürüm Kodu (SemVer):</label>
+              <input
+                type="text"
+                value={newVersionTag}
+                onChange={(e) => setNewVersionTag(e.target.value)}
+                placeholder="1.2.0"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs font-mono font-bold text-white focus:outline-none focus:border-indigo-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-400 block mb-1">Min. Desteklenen Sürüm:</label>
+              <input
+                type="text"
+                value={minSupported}
+                onChange={(e) => setMinSupported(e.target.value)}
+                placeholder="1.0.0"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs font-mono font-bold text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] text-slate-400 block mb-1">Sürüm Başlığı:</label>
+            <input
+              type="text"
+              value={newVersionTitle}
+              onChange={(e) => setNewVersionTitle(e.target.value)}
+              placeholder="v1.2.0: AI Özel Deste & Oda Geliştirmeleri 🚀"
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs font-bold text-white focus:outline-none focus:border-indigo-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] text-slate-400 block mb-1">Sürüm Notları (Her satır 1 madde):</label>
+            <textarea
+              rows={3}
+              value={newVersionNotes}
+              onChange={(e) => setNewVersionNotes(e.target.value)}
+              placeholder="Yeni özellikler..."
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none font-sans"
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300">
+              <input
+                type="checkbox"
+                checked={isMandatoryUpdate}
+                onChange={(e) => setIsMandatoryUpdate(e.target.checked)}
+                className="rounded accent-rose-500 w-4 h-4 cursor-pointer"
+              />
+              <span className={isMandatoryUpdate ? 'text-rose-400' : 'text-slate-300'}>
+                Zorunlu Güncelleme (Force Update — Uygulamayı Kilitler)
+              </span>
+            </label>
+
+            <Button
+              variant="primary"
+              size="md"
+              type="submit"
+              disabled={publishing}
+              className="text-xs px-4"
+            >
+              <Send className="w-3.5 h-3.5 mr-1.5" />
+              {publishing ? 'Yayınlanıyor...' : 'Sürümü Yayınla'}
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      {/* 3. Funnel (Dönüşüm Hunisi) */}
       <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 flex flex-col gap-3">
         <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
           <Activity className="w-4 h-4 text-indigo-400" /> Kullanıcı Dönüşüm Hunisi (Funnel)
@@ -160,7 +378,7 @@ export default function AnalyticsDashboardPage() {
         </div>
       </div>
 
-      {/* 3. Sorun Çıkaran & Terk Edilen Sayfalar (Drop-off Raporu) */}
+      {/* 4. Sorun Çıkaran & Terk Edilen Sayfalar (Drop-off Raporu) */}
       <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
@@ -225,7 +443,7 @@ export default function AnalyticsDashboardPage() {
         </div>
       </div>
 
-      {/* 4. Monetizasyon & Paywall Tetikleme Ayarları */}
+      {/* 5. Monetizasyon & Paywall Tetikleme Ayarları */}
       <div className="p-5 rounded-3xl bg-slate-900/80 border border-amber-500/30 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-black text-amber-300 uppercase tracking-wider flex items-center gap-2">
@@ -273,6 +491,15 @@ export default function AnalyticsDashboardPage() {
         onClose={() => setIsTestPaywallOpen(false)}
         triggerSource="admin_preview"
       />
+
+      {/* Test Update Modal */}
+      {testUpdateModal && (
+        <UpdateModal
+          isOpen={Boolean(testUpdateModal)}
+          onClose={() => setTestUpdateModal(null)}
+          updateInfo={testUpdateModal}
+        />
+      )}
     </div>
   );
 }
