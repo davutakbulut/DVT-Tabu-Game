@@ -33,7 +33,10 @@ import {
   Dices,
   Zap,
   Globe,
-  Radio
+  Radio,
+  Gamepad2,
+  ChevronRight,
+  Star
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
@@ -100,55 +103,57 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between p-4 max-w-lg mx-auto w-full select-none">
-      {/* 1. Top Header Bar (Playful Arcade Style) */}
-      <header className="flex items-center justify-between py-2">
+    <div className="min-h-screen flex flex-col p-4 max-w-lg mx-auto w-full select-none justify-between gap-4">
+      {/* 1. TOP HEADER BAR */}
+      <header className="flex items-center justify-between py-1 shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-black text-2xl border-2 border-white/20">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-black text-xl border-2 border-white/20">
             T
           </div>
           <div>
-            <h1 className="text-xl font-black tracking-tight text-white leading-tight flex items-center gap-1.5">
-              DVT TABU
-              <span className="text-[10px] bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black px-1.5 py-0.2 rounded-md uppercase tracking-wider">
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-lg font-black tracking-tight text-white leading-tight">
+                DVT TABU
+              </h1>
+              <span className="text-[9px] bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black px-1.5 py-0.2 rounded-md uppercase tracking-wider shadow-sm">
                 PRO
               </span>
-            </h1>
+            </div>
             <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest block">
               Kelime Arenası
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* User Profile Avatar Pill */}
+        <div className="flex items-center gap-1.5">
+          {/* User Profile Pill */}
           <button
             onClick={() => setIsProfileDrawerOpen(true)}
-            className="flex items-center gap-2 py-1.5 px-3 rounded-2xl btn-3d-dark text-slate-200 transition-all"
+            className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-2xl btn-3d-dark text-slate-200"
             title="Profil & Kariyer"
           >
             {isMounted && userAvatar ? (
-              <img src={userAvatar} alt="Avatar" className="w-6 h-6 rounded-xl object-cover" />
+              <img src={userAvatar} alt="Avatar" className="w-5 h-5 rounded-lg object-cover" />
             ) : (
               <div 
                 suppressHydrationWarning
-                className="w-6 h-6 rounded-xl bg-indigo-500 text-white font-black text-xs flex items-center justify-center shadow-inner"
+                className="w-5 h-5 rounded-lg bg-indigo-500 text-white font-black text-[11px] flex items-center justify-center"
               >
                 {isMounted ? (guestName?.charAt(0)?.toUpperCase() || 'M') : 'M'}
               </div>
             )}
-            <span suppressHydrationWarning className="text-xs font-black truncate max-w-[75px]">
+            <span suppressHydrationWarning className="text-[11px] font-black truncate max-w-[65px]">
               {isMounted ? guestName : 'Misafir'}
             </span>
             {isMounted && isProUser && (
-              <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+              <Crown className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
             )}
           </button>
 
           {/* Sound Toggle */}
           <button
             onClick={handleSoundToggle}
-            className="p-2.5 rounded-2xl btn-3d-dark text-slate-300 hover:text-white"
+            className="p-2 rounded-2xl btn-3d-dark text-slate-300 hover:text-white"
             title={soundEnabled ? 'Sesi Kapat' : 'Sesi Aç'}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-indigo-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
@@ -157,7 +162,7 @@ export default function HomePage() {
           {/* Settings / Rules Modal Trigger */}
           <button
             onClick={() => setIsRuleModalOpen(true)}
-            className="p-2.5 rounded-2xl btn-3d-dark text-slate-300 hover:text-white"
+            className="p-2 rounded-2xl btn-3d-dark text-slate-300 hover:text-white"
             title="Kurallar & Ayarlar"
           >
             <Sliders className="w-4 h-4 text-indigo-400" />
@@ -165,73 +170,100 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* 2. Main Hero Play Arena */}
-      <div className="flex-1 flex flex-col justify-center gap-4 my-2">
+      {/* 2. MAIN CONTENT STAGE (Balanced & Filling Space Beautifully) */}
+      <main className="flex-1 flex flex-col gap-3.5 my-auto justify-center">
         {/* Active Ongoing Game Recovery Banner */}
         <ActiveGameBanner />
 
-        {/* Gemini AI Daily Insights Banner */}
-        <AiDailyBanner
-          currentSettings={settings}
-          onApplyMode={handleApplyAiMode}
-          onAddBonusCard={(card) => setCustomCards((prev) => [...prev, card])}
-        />
+        {/* HERO ARENA CARD: OYUN BAŞLAT (Centerpiece of the Screen) */}
+        <div className="p-5 rounded-3xl card-arcade flex flex-col gap-4 relative overflow-hidden bg-gradient-to-b from-slate-850 to-slate-950">
+          {/* Hero Decorative Header */}
+          <div className="flex items-center justify-between">
+            <div className="inline-flex items-center gap-1.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] font-black py-1 px-3 rounded-full">
+              <Flame className="w-3 h-3 text-amber-400 fill-amber-400" />
+              <span>TÜRKİYE'NİN EN İYİ TABU ARENASI</span>
+            </div>
 
-        {/* HERO CARD: OYUN BAŞLAT (Giant Tactile Arcade Card) */}
-        <div className="p-5 rounded-3xl card-arcade flex flex-col gap-4 relative overflow-hidden">
-          {/* Top Pill & Player Name */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 rounded-2xl px-3 py-1.5 flex-1 min-w-0">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Oyuncu:</span>
+            <span className="text-[10px] font-black text-slate-400 font-mono">
+              {teams.length} Takım Hazır
+            </span>
+          </div>
+
+          {/* Welcome Text */}
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
+              Yasakları Aş, Takımını <br className="hidden sm:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400">
+                Zirveye Taşı! 🏆
+              </span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+              Arkadaşlarınla tek cihazda toplanın veya online yarışın!
+            </p>
+          </div>
+
+          {/* Player Name Strip */}
+          <div className="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-slate-950/80 border border-slate-800">
+            <div className="flex items-center gap-1.5 px-2 flex-1 min-w-0">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0">Oyuncu:</span>
               <input
                 type="text"
                 suppressHydrationWarning
                 value={isMounted ? guestName : ''}
                 onChange={(e) => setGuestName(e.target.value)}
                 placeholder="Takma Adın..."
-                className="bg-transparent text-xs font-black text-white flex-1 focus:outline-none placeholder-slate-600 truncate"
+                className="bg-transparent text-xs font-black text-white flex-1 focus:outline-none placeholder-slate-600 truncate min-w-0"
                 maxLength={18}
               />
               <button
                 type="button"
                 onClick={handleRandomizeName}
-                className="p-1 text-slate-400 hover:text-amber-300"
+                className="p-1 text-slate-400 hover:text-amber-300 shrink-0"
                 title="Zar At (Rastgele İsim)"
               >
-                <Dices className="w-3.5 h-3.5" />
+                <Dices className="w-4 h-4" />
               </button>
             </div>
 
             {!isLoggedIn ? (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="text-[11px] font-extrabold text-indigo-300 bg-indigo-500/20 hover:bg-indigo-500/30 py-2 px-3 rounded-2xl border border-indigo-500/30 flex items-center gap-1 shrink-0 transition-all"
+                className="text-[10px] font-black text-indigo-300 bg-indigo-500/20 hover:bg-indigo-500/30 py-1.5 px-3 rounded-xl border border-indigo-500/30 flex items-center gap-1 shrink-0 transition-all"
               >
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> Giriş Yap
+                <Sparkles className="w-3 h-3 text-indigo-400" /> Giriş Yap
               </button>
             ) : (
-              <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 py-1.5 px-2.5 rounded-xl border border-emerald-500/20 shrink-0">
+              <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 py-1 px-2.5 rounded-lg border border-emerald-500/20 shrink-0">
                 ✓ Bağlı
               </span>
             )}
           </div>
 
-          {/* MAIN CTA: OYUN BAŞLAT (3D Emerald Giant Button) */}
-          <button
-            onClick={() => setIsGameSetupOpen(true)}
-            className="w-full py-4.5 rounded-2xl btn-3d-emerald text-white font-black text-lg sm:text-xl tracking-wide flex items-center justify-center gap-3 shadow-xl"
-          >
-            <Play className="w-7 h-7 fill-white drop-shadow-md" />
-            <span>OYUN BAŞLAT</span>
-            <span className="text-[11px] font-extrabold bg-black/20 text-emerald-100 px-2.5 py-1 rounded-xl uppercase tracking-wider">
-              {teams.length} Takım
-            </span>
-          </button>
+          {/* GIANT 3D TACTILE CTA: OYUN BAŞLAT */}
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={() => setIsGameSetupOpen(true)}
+              className="w-full py-4.5 rounded-2xl btn-3d-emerald text-white font-black text-lg sm:text-xl tracking-wide flex items-center justify-center gap-3 shadow-xl"
+            >
+              <Play className="w-6 h-6 fill-white drop-shadow-md" />
+              <span>OYUN BAŞLAT</span>
+              <span className="text-[11px] font-extrabold bg-black/20 text-emerald-100 px-2.5 py-1 rounded-xl uppercase tracking-wider">
+                {teams.length} Takım
+              </span>
+            </button>
+            <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400">
+              <span>⏱️ {settings.turn_duration}s Süre</span>
+              <span>•</span>
+              <span>🔄 {settings.pass_limit >= 99 ? '∞' : settings.pass_limit} Pas</span>
+              <span>•</span>
+              <span>🏆 {settings.total_rounds} Tur</span>
+            </div>
+          </div>
         </div>
 
-        {/* 3. BENTO GRID: Mode Actions (Multiplayer & AI Studio) */}
+        {/* 3. BENTO GRID: Multiplayer & AI Studio */}
         <div className="grid grid-cols-2 gap-3">
-          {/* Online Multiplayer Lobby */}
+          {/* Online Multiplayer Card */}
           <button
             onClick={() => router.push('/rooms')}
             className="p-4 rounded-3xl card-arcade flex flex-col justify-between gap-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] group"
@@ -246,12 +278,14 @@ export default function HomePage() {
             </div>
 
             <div>
-              <h3 className="text-sm font-black text-white">Çok Oyunculu</h3>
+              <h3 className="text-sm font-black text-white flex items-center gap-1">
+                Çok Oyunculu <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition-colors" />
+              </h3>
               <p className="text-[10px] text-slate-400 mt-0.5">Arkadaşlarınla online odalarda yarış</p>
             </div>
           </button>
 
-          {/* Gemini AI Deck Generator */}
+          {/* Gemini AI Deck Studio Card */}
           <button
             onClick={() => setIsDeckModalOpen(true)}
             className="p-4 rounded-3xl card-arcade flex flex-col justify-between gap-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] group"
@@ -272,15 +306,24 @@ export default function HomePage() {
             </div>
 
             <div>
-              <h3 className="text-sm font-black text-white">Özel Deste Üret</h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">Yapay zeka ile kendi temalı desteni yarat</p>
+              <h3 className="text-sm font-black text-white flex items-center gap-1">
+                Özel Deste Üret <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition-colors" />
+              </h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Yapay zeka ile kendi desteni yarat</p>
             </div>
           </button>
         </div>
-      </div>
 
-      {/* 4. Bottom Quick Nav Bar */}
-      <footer className="flex items-center justify-between py-3 border-t border-slate-800/80 text-xs">
+        {/* 4. Gemini AI Daily Insights Bulletin */}
+        <AiDailyBanner
+          currentSettings={settings}
+          onApplyMode={handleApplyAiMode}
+          onAddBonusCard={(card) => setCustomCards((prev) => [...prev, card])}
+        />
+      </main>
+
+      {/* 5. BOTTOM NAVIGATION BAR */}
+      <footer className="flex items-center justify-between py-2 border-t border-slate-800/80 text-xs shrink-0">
         <button
           onClick={() => setIsProfileDrawerOpen(true)}
           className="text-slate-400 hover:text-white flex items-center gap-1.5 font-bold transition-colors"
