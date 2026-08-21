@@ -75,6 +75,12 @@ export default function AdminPortalPage() {
   const { currentVersion, updateInfo, checkNow } = useVersion();
   const { setOnboardingCompleted } = useUserStore();
 
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
   // PIN Change State
   const [isChangePinOpen, setIsChangePinOpen] = useState(false);
   const [newPinValue, setNewPinValue] = useState('');
@@ -794,8 +800,8 @@ export default function AdminPortalPage() {
     resolutionRate: 100,
   };
 
-  // 1. PIN Lock Screen if not logged in
-  if (!isAuthenticated) {
+  // 1. PIN Lock Screen if not logged in or during initial mount
+  if (!hasMounted || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 max-w-md mx-auto w-full">
         <div className="w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col gap-5 text-center">

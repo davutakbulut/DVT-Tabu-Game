@@ -38,6 +38,9 @@ export function InterstitialAdModal({
 }: InterstitialAdModalProps) {
   const [adConfig, setAdConfig] = useState<AdConfig>(DEFAULT_AD_CONFIG);
   const [currentAd, setCurrentAd] = useState<AdItem>(DEFAULT_ADS[0]);
+  const [countdown, setCountdown] = useState<number>(3);
+  const [canSkip, setCanSkip] = useState(false);
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const { guestId, userEmail } = useUserStore();
   const [openedAt, setOpenedAt] = useState<number>(Date.now());
 
