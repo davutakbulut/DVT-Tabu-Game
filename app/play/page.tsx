@@ -170,19 +170,17 @@ export default function PlayPage() {
               Cihazı anlatıcı oyuncuya verin. Hazır olduğunuzda başlat butonuna dokunun!
             </p>
 
-            <Button
-              variant="primary"
-              size="xl"
-              fullWidth
+            <button
+              type="button"
               onClick={() => {
                 resetTimer(settings.turn_duration);
                 startTurn();
               }}
-              className="shadow-indigo-500/30"
+              className="w-full py-4.5 rounded-2xl btn-3d-emerald text-white font-black text-lg shadow-xl flex items-center justify-center gap-2"
             >
-              <Play className="w-6 h-6 fill-white mr-2" />
+              <Play className="w-6 h-6 fill-white drop-shadow" />
               Süreyi Başlat ({settings.turn_duration}s)
-            </Button>
+            </button>
           </motion.div>
         )}
 
@@ -234,14 +232,14 @@ export default function PlayPage() {
               <span className="text-white font-extrabold">{activeTeam?.score} Puan</span>
             </div>
 
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
+            <button
+              type="button"
               onClick={handleNextTeam}
+              className="w-full py-4 rounded-2xl btn-3d-indigo text-white font-black text-base shadow-xl flex items-center justify-center gap-2"
             >
-              Sonraki Takıma Geç <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
+              <span>Sonraki Takıma Geç</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
           </motion.div>
         )}
       </div>

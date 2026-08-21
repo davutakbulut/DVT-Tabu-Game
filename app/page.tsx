@@ -29,11 +29,20 @@ import {
   History,
   Crown,
   ShieldCheck,
-  User
+  User,
+  Dices,
+  Zap,
+  Globe,
+  Radio
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
 import { Card } from '@/types/game';
+
+const RANDOM_NICKNAMES = [
+  'UstaTabucu', 'GizemliKaplan', 'KelimeAvcısı', 'HızlıAnlatıcı', 
+  'GeceKartalı', 'ZekiPanda', 'FırtınaTabu', 'Şampiyon99'
+];
 
 export default function HomePage() {
   const router = useRouter();
@@ -76,8 +85,10 @@ export default function HomePage() {
     soundManager.toggleSound();
   };
 
-  const handleStartSingleDevice = () => {
-    setIsGameSetupOpen(true);
+  const handleRandomizeName = () => {
+    const random = RANDOM_NICKNAMES[Math.floor(Math.random() * RANDOM_NICKNAMES.length)];
+    setGuestName(random);
+    soundManager.play('pass');
   };
 
   const handleApplyAiMode = (mode: any) => {
@@ -88,21 +99,20 @@ export default function HomePage() {
     soundManager.play('correct');
   };
 
-  const handleAddAiCards = (cards: Card[]) => {
-    setCustomCards((prev) => [...prev, ...cards]);
-  };
-
   return (
-    <div className="min-h-screen flex flex-col justify-between p-4 max-w-lg mx-auto w-full">
-      {/* Top Header Bar */}
+    <div className="min-h-screen flex flex-col justify-between p-4 max-w-lg mx-auto w-full select-none">
+      {/* 1. Top Header Bar (Playful Arcade Style) */}
       <header className="flex items-center justify-between py-2">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-black text-xl">
+        <div className="flex items-center gap-2.5">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-black text-2xl border-2 border-white/20">
             T
           </div>
           <div>
-            <h1 className="text-lg font-black tracking-tight text-white leading-tight">
+            <h1 className="text-xl font-black tracking-tight text-white leading-tight flex items-center gap-1.5">
               DVT TABU
+              <span className="text-[10px] bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black px-1.5 py-0.2 rounded-md uppercase tracking-wider">
+                PRO
+              </span>
             </h1>
             <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest block">
               Kelime Arenası
@@ -111,10 +121,10 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* User Profile Avatar */}
+          {/* User Profile Avatar Pill */}
           <button
             onClick={() => setIsProfileDrawerOpen(true)}
-            className="flex items-center gap-1.5 p-1.5 pr-2.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-slate-200 transition-all relative"
+            className="flex items-center gap-2 py-1.5 px-3 rounded-2xl btn-3d-dark text-slate-200 transition-all"
             title="Profil & Kariyer"
           >
             {isMounted && userAvatar ? (
@@ -122,39 +132,41 @@ export default function HomePage() {
             ) : (
               <div 
                 suppressHydrationWarning
-                className="w-6 h-6 rounded-xl bg-indigo-500/20 text-indigo-400 font-black text-xs flex items-center justify-center"
+                className="w-6 h-6 rounded-xl bg-indigo-500 text-white font-black text-xs flex items-center justify-center shadow-inner"
               >
                 {isMounted ? (guestName?.charAt(0)?.toUpperCase() || 'M') : 'M'}
               </div>
             )}
-            <span suppressHydrationWarning className="text-xs font-black truncate max-w-[70px]">
+            <span suppressHydrationWarning className="text-xs font-black truncate max-w-[75px]">
               {isMounted ? guestName : 'Misafir'}
             </span>
             {isMounted && isProUser && (
-              <Crown className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+              <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
             )}
           </button>
 
+          {/* Sound Toggle */}
           <button
             onClick={handleSoundToggle}
-            className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
+            className="p-2.5 rounded-2xl btn-3d-dark text-slate-300 hover:text-white"
             title={soundEnabled ? 'Sesi Kapat' : 'Sesi Aç'}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-indigo-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
           </button>
 
+          {/* Settings / Rules Modal Trigger */}
           <button
-            onClick={() => setIsGameSetupOpen(true)}
-            className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
-            title="Oyun Ayarları & Kurulum"
+            onClick={() => setIsRuleModalOpen(true)}
+            className="p-2.5 rounded-2xl btn-3d-dark text-slate-300 hover:text-white"
+            title="Kurallar & Ayarlar"
           >
             <Sliders className="w-4 h-4 text-indigo-400" />
           </button>
         </div>
       </header>
 
-      {/* Hero / Main Section */}
-      <div className="flex-1 flex flex-col justify-center gap-4 my-3">
+      {/* 2. Main Hero Play Arena */}
+      <div className="flex-1 flex flex-col justify-center gap-4 my-2">
         {/* Active Ongoing Game Recovery Banner */}
         <ActiveGameBanner />
 
@@ -165,157 +177,180 @@ export default function HomePage() {
           onAddBonusCard={(card) => setCustomCards((prev) => [...prev, card])}
         />
 
-        {/* Player Name / Quick Auth Action */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">Oyuncu:</span>
-            <input
-              type="text"
-              suppressHydrationWarning
-              value={isMounted ? guestName : ''}
-              onChange={(e) => setGuestName(e.target.value)}
-              placeholder="Takma Adın..."
-              className="bg-transparent text-sm font-extrabold text-white flex-1 focus:outline-none placeholder-slate-600 truncate"
-              maxLength={18}
-            />
-          </div>
+        {/* HERO CARD: OYUN BAŞLAT (Giant Tactile Arcade Card) */}
+        <div className="p-5 rounded-3xl card-arcade flex flex-col gap-4 relative overflow-hidden">
+          {/* Top Pill & Player Name */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 rounded-2xl px-3 py-1.5 flex-1 min-w-0">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Oyuncu:</span>
+              <input
+                type="text"
+                suppressHydrationWarning
+                value={isMounted ? guestName : ''}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="Takma Adın..."
+                className="bg-transparent text-xs font-black text-white flex-1 focus:outline-none placeholder-slate-600 truncate"
+                maxLength={18}
+              />
+              <button
+                type="button"
+                onClick={handleRandomizeName}
+                className="p-1 text-slate-400 hover:text-amber-300"
+                title="Zar At (Rastgele İsim)"
+              >
+                <Dices className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
-          {!isLoggedIn ? (
-            <button
-              onClick={() => setIsAuthModalOpen(true)}
-              className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 py-1.5 px-3 rounded-xl border border-indigo-500/20 flex items-center gap-1 shrink-0"
-            >
-              <Sparkles className="w-3 h-3 text-indigo-400" /> Giriş Yap
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsProfileDrawerOpen(true)}
-              className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 py-1 px-2 rounded-lg border border-emerald-500/20 shrink-0"
-            >
-              ✓ Bağlı
-            </button>
-          )}
-        </div>
-
-        {/* Game Mode Actions */}
-        <div className="flex flex-col gap-3">
-          {/* Game Start Mode */}
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={() => setIsGameSetupOpen(true)}
-            fullWidth
-            className="py-4 font-black tracking-wide text-base bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:opacity-95 shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-2 relative overflow-hidden group"
-          >
-            <Play className="w-5 h-5 fill-current" />
-            Oyun Başlat
-            <span className="text-[10px] uppercase font-bold bg-white/20 px-2 py-0.5 rounded-full ml-1">
-              Özelleştirilebilir
-            </span>
-          </Button>
-
-          {/* Online Multiplayer Lobby */}
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => router.push('/rooms')}
-            fullWidth
-            className="py-4 font-black text-sm flex items-center justify-center gap-2 border-indigo-500/30 hover:border-indigo-500/60"
-          >
-            <Users className="w-5 h-5 text-indigo-400" />
-            Çok Oyunculu Odalar (Online)
-            <span className="text-[10px] uppercase font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
-              Canlı
-            </span>
-          </Button>
-
-          {/* AI Deck Generator */}
-          <Button
-            variant="ghost"
-            size="md"
-            onClick={() => setIsDeckModalOpen(true)}
-            fullWidth
-            className="py-3 font-bold text-xs flex items-center justify-center gap-2 border border-purple-500/30 bg-purple-950/20 hover:bg-purple-950/40 text-purple-200"
-          >
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            Gemini AI ile Özel Deste Üret
-            {customCards.length > 0 && (
-              <span className="bg-purple-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
-                +{customCards.length} Kart
+            {!isLoggedIn ? (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="text-[11px] font-extrabold text-indigo-300 bg-indigo-500/20 hover:bg-indigo-500/30 py-2 px-3 rounded-2xl border border-indigo-500/30 flex items-center gap-1 shrink-0 transition-all"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> Giriş Yap
+              </button>
+            ) : (
+              <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 py-1.5 px-2.5 rounded-xl border border-emerald-500/20 shrink-0">
+                ✓ Bağlı
               </span>
             )}
-          </Button>
+          </div>
+
+          {/* MAIN CTA: OYUN BAŞLAT (3D Emerald Giant Button) */}
+          <button
+            onClick={() => setIsGameSetupOpen(true)}
+            className="w-full py-4.5 rounded-2xl btn-3d-emerald text-white font-black text-lg sm:text-xl tracking-wide flex items-center justify-center gap-3 shadow-xl"
+          >
+            <Play className="w-7 h-7 fill-white drop-shadow-md" />
+            <span>OYUN BAŞLAT</span>
+            <span className="text-[11px] font-extrabold bg-black/20 text-emerald-100 px-2.5 py-1 rounded-xl uppercase tracking-wider">
+              {teams.length} Takım
+            </span>
+          </button>
+        </div>
+
+        {/* 3. BENTO GRID: Mode Actions (Multiplayer & AI Studio) */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Online Multiplayer Lobby */}
+          <button
+            onClick={() => router.push('/rooms')}
+            className="p-4 rounded-3xl card-arcade flex flex-col justify-between gap-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                <Radio className="w-5 h-5" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full animate-pulse">
+                Canlı
+              </span>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-black text-white">Çok Oyunculu</h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Arkadaşlarınla online odalarda yarış</p>
+            </div>
+          </button>
+
+          {/* Gemini AI Deck Generator */}
+          <button
+            onClick={() => setIsDeckModalOpen(true)}
+            className="p-4 rounded-3xl card-arcade flex flex-col justify-between gap-3 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30 group-hover:bg-purple-600 group-hover:text-white transition-all">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              {customCards.length > 0 ? (
+                <span className="text-[9px] font-black bg-purple-500 text-white px-2 py-0.5 rounded-full">
+                  +{customCards.length} Kart
+                </span>
+              ) : (
+                <span className="text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full">
+                  AI Stüdyo
+                </span>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-black text-white">Özel Deste Üret</h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Yapay zeka ile kendi temalı desteni yarat</p>
+            </div>
+          </button>
         </div>
       </div>
 
-      {/* Footer Info */}
-      <footer className="flex items-center justify-between text-[11px] text-slate-500 py-2 border-t border-slate-900">
+      {/* 4. Bottom Quick Nav Bar */}
+      <footer className="flex items-center justify-between py-3 border-t border-slate-800/80 text-xs">
         <button
-          onClick={() => setIsChangelogOpen(true)}
-          className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition-colors font-bold bg-indigo-500/10 py-1 px-2.5 rounded-lg border border-indigo-500/20"
+          onClick={() => setIsProfileDrawerOpen(true)}
+          className="text-slate-400 hover:text-white flex items-center gap-1.5 font-bold transition-colors"
         >
-          <History className="w-3.5 h-3.5" /> Sürüm v1.1.0 (Yenilikler)
+          <Trophy className="w-4 h-4 text-amber-400" />
+          <span>Kariyer & Maçlarım</span>
         </button>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsOnboardingOpen(true)}
-            className="hover:text-slate-300 transition-colors"
-          >
-            Nasıl Oynanır?
-          </button>
-          <button
-            onClick={() => router.push('/admin')}
-            className="hover:text-indigo-400 flex items-center gap-1 transition-colors"
-            title="Yönetici Paneli"
-          >
-            <ShieldCheck className="w-3.5 h-3.5" /> Yönetici
-          </button>
-        </div>
+        <button
+          onClick={() => setIsOnboardingOpen(true)}
+          className="text-slate-400 hover:text-white flex items-center gap-1.5 font-bold transition-colors"
+        >
+          <HelpCircle className="w-4 h-4 text-indigo-400" />
+          <span>Nasıl Oynanır?</span>
+        </button>
+
+        <button
+          onClick={() => setIsChangelogOpen(true)}
+          className="text-slate-400 hover:text-white flex items-center gap-1.5 font-bold transition-colors"
+        >
+          <History className="w-4 h-4 text-cyan-400" />
+          <span>v1.2.0</span>
+        </button>
       </footer>
 
-      {/* Modals & Wizards */}
+      {/* Modals & Drawers */}
       <GameSetupModal
         isOpen={isGameSetupOpen}
         onClose={() => setIsGameSetupOpen(false)}
-      />
-
-      <ProfileDrawer
-        isOpen={isProfileDrawerOpen}
-        onClose={() => setIsProfileDrawerOpen(false)}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
-        onOpenRules={() => setIsGameSetupOpen(true)}
-        onOpenPaywall={() => setIsPaywallOpen(true)}
-      />
-
-      <OnboardingModal
-        isOpen={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
-        onStartGame={handleStartSingleDevice}
       />
 
       <RuleSettingsModal
         isOpen={isRuleModalOpen}
         onClose={() => setIsRuleModalOpen(false)}
         initialSettings={settings}
-        onSave={(newSet) => updateSettings(newSet)}
+        onSave={(newSettings) => updateSettings(newSettings)}
       />
 
       <DeckGeneratorModal
         isOpen={isDeckModalOpen}
         onClose={() => setIsDeckModalOpen(false)}
-        onAddCards={handleAddAiCards}
-      />
-
-      <PaywallModal
-        isOpen={isPaywallOpen}
-        onClose={() => setIsPaywallOpen(false)}
-        triggerSource="manual_upgrade"
+        onAddCards={(cards) => setCustomCards((prev) => [...prev, ...cards])}
       />
 
       <ChangelogModal
         isOpen={isChangelogOpen}
         onClose={() => setIsChangelogOpen(false)}
+      />
+
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      <ProfileDrawer
+        isOpen={isProfileDrawerOpen}
+        onClose={() => setIsProfileDrawerOpen(false)}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenRules={() => setIsRuleModalOpen(true)}
+        onOpenPaywall={() => setIsPaywallOpen(true)}
+      />
+
+      <PaywallModal
+        isOpen={isPaywallOpen}
+        onClose={() => setIsPaywallOpen(false)}
       />
     </div>
   );

@@ -5,16 +5,12 @@
 :root {
   --foreground-rgb: 248, 250, 252;
   --background-start-rgb: 15, 23, 42;
-  --background-end-rgb: 2, 6, 23;
+  --background-end-rgb: 8, 12, 28;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      rgba(var(--background-start-rgb), 1),
-      rgba(var(--background-end-rgb), 1)
-    );
+  background: radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 1) 50%, rgba(8, 12, 28, 1) 100%);
   min-height: 100vh;
   min-height: 100dvh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -29,6 +25,90 @@ body {
 }
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Tactile 3D Buttons (Arcade / Playful / Google Stitch Style) */
+.btn-3d-emerald {
+  background-color: #10b981;
+  border-bottom: 5px solid #047857;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  transition: all 0.08s ease-out;
+}
+.btn-3d-emerald:hover {
+  background-color: #34d399;
+}
+.btn-3d-emerald:active {
+  transform: translateY(4px);
+  border-bottom-width: 1px;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.btn-3d-indigo {
+  background-color: #6366f1;
+  border-bottom: 5px solid #4338ca;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  transition: all 0.08s ease-out;
+}
+.btn-3d-indigo:hover {
+  background-color: #818cf8;
+}
+.btn-3d-indigo:active {
+  transform: translateY(4px);
+  border-bottom-width: 1px;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+.btn-3d-rose {
+  background-color: #f43f5e;
+  border-bottom: 5px solid #be123c;
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.35);
+  transition: all 0.08s ease-out;
+}
+.btn-3d-rose:hover {
+  background-color: #fb7185;
+}
+.btn-3d-rose:active {
+  transform: translateY(4px);
+  border-bottom-width: 1px;
+  box-shadow: 0 2px 4px rgba(244, 63, 94, 0.2);
+}
+
+.btn-3d-amber {
+  background-color: #f59e0b;
+  border-bottom: 5px solid #b45309;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+  transition: all 0.08s ease-out;
+}
+.btn-3d-amber:hover {
+  background-color: #fbbf24;
+}
+.btn-3d-amber:active {
+  transform: translateY(4px);
+  border-bottom-width: 1px;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.btn-3d-dark {
+  background-color: #1e293b;
+  border-bottom: 4px solid #0f172a;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.08s ease-out;
+}
+.btn-3d-dark:hover {
+  background-color: #334155;
+}
+.btn-3d-dark:active {
+  transform: translateY(3px);
+  border-bottom-width: 1px;
+}
+
+/* Playful Card Elevation */
+.card-arcade {
+  background: #1e293b;
+  border: 2px solid #334155;
+  box-shadow: 0 8px 0 #0f172a, 0 14px 28px rgba(0, 0, 0, 0.4);
 }
 
 /* Custom scrollbars */
