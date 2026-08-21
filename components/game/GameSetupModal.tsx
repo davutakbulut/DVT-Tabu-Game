@@ -32,11 +32,14 @@ import {
   RotateCcw,
   AlertOctagon,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Timer,
+  Gauge,
+  HelpCircle
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
-import { Team, GameSettings } from '@/types/game';
+import { Team, GameSettings, Difficulty } from '@/types/game';
 
 interface GameSetupModalProps {
   isOpen: boolean;
@@ -75,16 +78,22 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
     paywall_vip_decks_enabled: false,
   });
 
-  // Wizard State
+  // Preset Mode Selection
+  const [activePreset, setActivePreset] = useState<'classic' | 'blitz' | 'hardcore' | 'chill' | 'custom'>('classic');
+
+  // Wizard Rules State
   const [teams, setTeams] = useState<Team[]>(storeTeams);
   const [turnDuration, setTurnDuration] = useState<number>(storeSettings.turn_duration || 60);
-  const [passLimit, setPassLimit] = useState<number>(storeSettings.pass_limit ?? 2);
+  const [passLimit, setPassLimit] = useState<number>(storeSettings.pass_limit ?? 3);
+  const [passPenalty, setPassPenalty] = useState<number>(storeSettings.pass_penalty ?? 0);
   const [tabuLimit, setTabuLimit] = useState<number>(storeSettings.tabu_limit ?? 0);
   const [tabuPenalty, setTabuPenalty] = useState<number>(storeSettings.buzzer_penalty ?? -1);
   const [correctPoints, setCorrectPoints] = useState<number>(storeSettings.correct_points || 1);
   const [targetScore, setTargetScore] = useState<number | null>(storeSettings.target_score ?? 50);
   const [totalRounds, setTotalRounds] = useState<number>(storeSettings.total_rounds || 6);
   const [goldenRound, setGoldenRound] = useState<boolean>(storeSettings.golden_round_enabled ?? true);
+  const [difficulty, setDifficulty] = useState<Difficulty | 'Tümü'>(storeSettings.difficulty || 'Tümü');
+  const [breakDuration, setBreakDuration] = useState<number>(storeSettings.break_duration ?? 3);
   
   // Decks State
   const [availableDecks, setAvailableDecks] = useState<any[]>([]);
@@ -118,7 +127,6 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
         const json = await res.json();
         const active = (json.decks || []).filter((d: any) => d.is_active !== false);
         setAvailableDecks(active);
-        // Default: select all active decks
         setSelectedDeckIds(active.map((d: any) => d.id));
       }
     } catch {} finally {
@@ -126,11 +134,66 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
     }
   };
 
+  // --- Presets Handler ---
+  const handleApplyPreset = (preset: 'classic' | 'blitz' | 'hardcore' | 'chill') => {
+    setActivePreset(preset);
+    soundManager.play('pass');
+
+    if (preset === 'classic') {
+      setTurnDuration(60);
+      setPassLimit(3);
+      setPassPenalty(0);
+      setTabuLimit(0);
+      setTabuPenalty(-1);
+      setCorrectPoints(1);
+      setTotalRounds(6);
+      setTargetScore(50);
+      setGoldenRound(true);
+      setDifficulty('Tümü');
+      setBreakDuration(3);
+    } else if (preset === 'blitz') {
+      setTurnDuration(30);
+      setPassLimit(1);
+      setPassPenalty(0);
+      setTabuLimit(2);
+      setTabuPenalty(-1);
+      setCorrectPoints(2);
+      setTotalRounds(8);
+      setTargetScore(40);
+      setGoldenRound(true);
+      setDifficulty('Tümü');
+      setBreakDuration(3);
+    } else if (preset === 'hardcore') {
+      setTurnDuration(45);
+      setPassLimit(0);
+      setPassPenalty(-1);
+      setTabuLimit(1);
+      setTabuPenalty(-2);
+      setCorrectPoints(1);
+      setTotalRounds(10);
+      setTargetScore(50);
+      setGoldenRound(true);
+      setDifficulty('Zor');
+      setBreakDuration(5);
+    } else if (preset === 'chill') {
+      setTurnDuration(90);
+      setPassLimit(999);
+      setPassPenalty(0);
+      setTabuLimit(0);
+      setTabuPenalty(0);
+      setCorrectPoints(1);
+      setTotalRounds(4);
+      setTargetScore(null);
+      setGoldenRound(false);
+      setDifficulty('Kolay');
+      setBreakDuration(0);
+    }
+  };
+
   // --- Step 1: Team Management ---
   const handleAddTeam = () => {
     if (teams.length >= 6) return;
 
-    // Check Paywall for 3+ teams
     if (teams.length >= 2 && config.paywall_3plus_teams_enabled && !isProUser) {
       analytics.paywallView('3plus_teams');
       setPaywallTrigger('3plus_teams');
@@ -203,19 +266,22 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
       team_count: teams.length,
       turn_duration: turnDuration,
       pass_limit: passLimit,
+      pass_penalty: passPenalty,
       tabu_limit: tabuLimit,
       buzzer_penalty: tabuPenalty,
       correct_points: correctPoints,
       target_score: targetScore === 0 ? null : targetScore,
       total_rounds: totalRounds,
       golden_round_enabled: goldenRound,
+      difficulty,
+      break_duration: breakDuration,
     };
 
     updateSettings(finalSettings);
     analytics.gameSetupFinish(teams.length, turnDuration, selectedDeckIds);
     soundManager.play('start');
 
-    // Fetch cards for selected decks
+    // Fetch cards for selected decks & difficulty
     let fetchedCards: any[] = [];
     try {
       const res = await fetch(`/api/cards?activeOnly=true&limit=300`);
@@ -223,6 +289,9 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
         const json = await res.json();
         const allCards = json.cards || [];
         fetchedCards = allCards.filter((c: any) => selectedDeckIds.includes(c.deck_id));
+        if (difficulty !== 'Tümü') {
+          fetchedCards = fetchedCards.filter((c: any) => c.difficulty === difficulty);
+        }
       }
     } catch {}
 
@@ -249,10 +318,10 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
       <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-indigo-500/40 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Modal Top Header */}
-        <div className="p-4 bg-slate-950 border-b border-slate-800/80 flex items-center justify-between">
+        {/* Header */}
+        <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md">
+            <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">
               <Sliders className="w-4 h-4" />
             </div>
             <div>
@@ -261,121 +330,117 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
-          >
+          <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Step Indicator Tabs */}
-        <div className="grid grid-cols-3 bg-slate-950/60 border-b border-slate-800 text-xs font-black">
-          {[
-            { step: 1, label: '1. Takımlar', icon: <Users className="w-3.5 h-3.5" /> },
-            { step: 2, label: '2. Kurallar', icon: <Clock className="w-3.5 h-3.5" /> },
-            { step: 3, label: '3. Desteler', icon: <Layers className="w-3.5 h-3.5" /> },
-          ].map((s) => (
-            <button
-              key={s.step}
-              onClick={() => setCurrentStep(s.step as any)}
-              className={`py-3 flex items-center justify-center gap-1.5 transition-all border-b-2 ${
-                currentStep === s.step
-                  ? 'border-indigo-500 text-indigo-300 bg-indigo-500/10'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {s.icon}
-              <span>{s.label}</span>
-            </button>
-          ))}
+        {/* Wizard Stepper Bar */}
+        <div className="grid grid-cols-3 border-b border-slate-800 bg-slate-950/50 text-xs font-bold">
+          <button
+            onClick={() => setCurrentStep(1)}
+            className={`py-3 flex items-center justify-center gap-1.5 border-b-2 transition-all ${
+              currentStep === 1
+                ? 'border-indigo-500 text-indigo-300 bg-indigo-500/10 font-black'
+                : 'border-transparent text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>1. Takımlar</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentStep(2)}
+            className={`py-3 flex items-center justify-center gap-1.5 border-b-2 transition-all ${
+              currentStep === 2
+                ? 'border-indigo-500 text-indigo-300 bg-indigo-500/10 font-black'
+                : 'border-transparent text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>2. Kurallar</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentStep(3)}
+            className={`py-3 flex items-center justify-center gap-1.5 border-b-2 transition-all ${
+              currentStep === 3
+                ? 'border-indigo-500 text-indigo-300 bg-indigo-500/10 font-black'
+                : 'border-transparent text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>3. Desteler</span>
+          </button>
         </div>
 
-        {/* Modal Scrollable Content Body */}
+        {/* Scrollable Wizard Body */}
         <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-4">
           {/* ================= STEP 1: TEAMS ================= */}
           {currentStep === 1 && (
-            <div className="flex flex-col gap-3.5 animate-in fade-in">
+            <div className="flex flex-col gap-3 animate-in fade-in">
               <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-black text-white uppercase tracking-wider">
-                    Yarışacak Takımlar ({teams.length} Takım)
-                  </h4>
-                  <span className="text-[10px] text-slate-400">Takım adlarını düzenleyin veya zar ile eğlenceli adlar türetin</span>
-                </div>
-
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleAddTeam}
-                  disabled={teams.length >= 6}
-                  className="text-xs py-1.5 px-3 font-bold bg-indigo-600 hover:bg-indigo-500 shadow-sm"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1" /> Takım Ekle
-                </Button>
+                <span className="text-xs font-black text-white uppercase tracking-wider">
+                  Yarışacak Takımlar ({teams.length}/6)
+                </span>
+                {teams.length < 6 && (
+                  <button
+                    onClick={handleAddTeam}
+                    className="flex items-center gap-1 text-xs font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 py-1.5 px-3 rounded-xl border border-indigo-500/20 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Takım Ekle
+                  </button>
+                )}
               </div>
 
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-2">
                 {teams.map((team, idx) => (
                   <div
                     key={team.id}
-                    className="p-3 bg-slate-950/80 rounded-2xl border border-slate-800/90 flex flex-col gap-2 transition-all hover:border-slate-700"
+                    className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-2.5 shadow-sm"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      {/* Team Color & Index */}
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div
-                          className="w-4 h-4 rounded-full shrink-0 shadow-sm"
-                          style={{ backgroundColor: team.color }}
-                        />
-                        <span className="text-[10px] font-bold text-slate-500 shrink-0">
-                          #{idx + 1}
-                        </span>
-
-                        <input
-                          type="text"
-                          value={team.name}
-                          onChange={(e) => handleUpdateTeamName(team.id, e.target.value)}
-                          placeholder="Takım Adı..."
-                          className="bg-transparent text-xs font-extrabold text-white flex-1 focus:outline-none placeholder-slate-600 truncate"
-                          maxLength={24}
-                        />
-                      </div>
-
-                      {/* Team Actions */}
-                      <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-4 h-4 rounded-full shrink-0 shadow-sm"
+                        style={{ backgroundColor: team.color }}
+                      />
+                      <input
+                        type="text"
+                        value={team.name}
+                        onChange={(e) => handleUpdateTeamName(team.id, e.target.value)}
+                        className="bg-transparent text-xs font-black text-white flex-1 focus:outline-none border-b border-transparent focus:border-indigo-500 pb-0.5"
+                        placeholder="Takım Adı..."
+                        maxLength={22}
+                      />
+                      <button
+                        onClick={() => handleRandomizeTeamName(team.id)}
+                        className="p-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white"
+                        title="Rastgele İsim"
+                      >
+                        <Dices className="w-3.5 h-3.5" />
+                      </button>
+                      {teams.length > 2 && (
                         <button
-                          onClick={() => handleRandomizeTeamName(team.id)}
-                          className="p-1.5 text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 rounded-xl transition-colors"
-                          title="Rastgele İsim Türet"
+                          onClick={() => handleRemoveTeam(team.id)}
+                          className="p-1.5 rounded-lg bg-slate-900 text-rose-400 hover:text-rose-300"
+                          title="Takımı Sil"
                         >
-                          <Dices className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
-
-                        {teams.length > 2 && (
-                          <button
-                            onClick={() => handleRemoveTeam(team.id)}
-                            className="p-1.5 text-slate-500 hover:text-rose-400 rounded-xl transition-colors"
-                            title="Takımı Sil"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
 
                     {/* Color Swatches */}
-                    <div className="flex items-center gap-1.5 pt-1 border-t border-slate-900">
-                      <span className="text-[9px] text-slate-500">Renk:</span>
-                      {TEAM_COLORS.map((col) => (
+                    <div className="flex items-center gap-1.5 pl-6">
+                      {TEAM_COLORS.map((c) => (
                         <button
-                          key={col}
+                          key={c}
                           type="button"
-                          onClick={() => handleUpdateTeamColor(team.id, col)}
-                          className={`w-4 h-4 rounded-full transition-all ${
-                            team.color === col ? 'ring-2 ring-white scale-110' : 'opacity-60 hover:opacity-100'
+                          onClick={() => handleUpdateTeamColor(team.id, c)}
+                          style={{ backgroundColor: c }}
+                          className={`w-4 h-4 rounded-full transition-transform ${
+                            team.color === c ? 'scale-125 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
                           }`}
-                          style={{ backgroundColor: col }}
                         />
                       ))}
                     </div>
@@ -385,10 +450,64 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
             </div>
           )}
 
-          {/* ================= STEP 2: RULES ================= */}
+          {/* ================= STEP 2: RICH RULES ================= */}
           {currentStep === 2 && (
             <div className="flex flex-col gap-4 animate-in fade-in">
-              {/* 1. Tur Süresi Slider + Hızlı Butonlar */}
+              {/* 0. Hızlı Oyun Modu Presetleri (Presets) */}
+              <div>
+                <label className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  Hızlı Oyun Modu Şablonları
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {[
+                    { id: 'classic', label: '⚡ Klasik', desc: '60s • 3 Pas • 6 Tur' },
+                    { id: 'blitz', label: '🔥 Yıldırım', desc: '30s • 1 Pas • +2 Puan' },
+                    { id: 'hardcore', label: '💀 Cezalı', desc: '45s • 0 Pas • -2 Ceza' },
+                    { id: 'chill', label: '🎉 Parti', desc: '90s • ∞ Pas • Rahat' },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleApplyPreset(p.id as any)}
+                      className={`p-2 rounded-2xl border text-left flex flex-col gap-0.5 transition-all ${
+                        activePreset === p.id
+                          ? 'bg-indigo-600/30 border-indigo-500 text-white shadow-md shadow-indigo-500/20'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <span className="text-xs font-black">{p.label}</span>
+                      <span className="text-[9px] text-slate-400 truncate">{p.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 1. Kelime Zorluk Derecesi (Difficulty) */}
+              <div>
+                <label className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+                  <Gauge className="w-3.5 h-3.5 text-emerald-400" />
+                  Kelime Zorluk Derecesi
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(['Tümü', 'Kolay', 'Orta', 'Zor'] as const).map((lvl) => (
+                    <button
+                      key={lvl}
+                      type="button"
+                      onClick={() => { setDifficulty(lvl); setActivePreset('custom'); }}
+                      className={`py-2 rounded-xl text-xs font-black border transition-all ${
+                        difficulty === lvl
+                          ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500 shadow-sm'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      {lvl === 'Tümü' ? '🌟 Tümü' : lvl === 'Kolay' ? '🟢 Kolay' : lvl === 'Orta' ? '⚡ Orta' : '🔥 Zor'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Tur Süresi Slider + Hızlı Butonlar */}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -407,7 +526,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                   max={180}
                   step={5}
                   value={turnDuration}
-                  onChange={(e) => setTurnDuration(parseInt(e.target.value, 10))}
+                  onChange={(e) => { setTurnDuration(parseInt(e.target.value, 10)); setActivePreset('custom'); }}
                   className="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer my-1.5"
                 />
 
@@ -423,7 +542,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                     <button
                       key={item.val}
                       type="button"
-                      onClick={() => setTurnDuration(item.val)}
+                      onClick={() => { setTurnDuration(item.val); setActivePreset('custom'); }}
                       className={`py-1.5 rounded-xl text-[11px] font-black border transition-all ${
                         turnDuration === item.val
                           ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/20'
@@ -436,7 +555,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                 </div>
               </div>
 
-              {/* 2. Tur Başına Pas Hakkı */}
+              {/* 3. Tur Başına Pas Hakkı & Pas Cezası */}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -447,12 +566,12 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                     {passLimit >= 99 ? '∞ Sınırsız' : `${passLimit} Pas`}
                   </span>
                 </div>
-                <div className="grid grid-cols-7 gap-1">
+                <div className="grid grid-cols-7 gap-1 mb-2">
                   {[0, 1, 2, 3, 4, 5, 999].map((p) => (
                     <button
                       key={p}
                       type="button"
-                      onClick={() => setPassLimit(p)}
+                      onClick={() => { setPassLimit(p); setActivePreset('custom'); }}
                       className={`py-2 rounded-xl text-xs font-black border transition-all ${
                         passLimit === p
                           ? 'bg-amber-500/25 text-amber-300 border-amber-500 shadow-sm'
@@ -463,9 +582,38 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                     </button>
                   ))}
                 </div>
+
+                {/* Pas Cezası */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
+                  <span className="text-slate-400 font-bold">Pas Geçme Cezası:</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => { setPassPenalty(0); setActivePreset('custom'); }}
+                      className={`px-2.5 py-1 rounded-lg font-black text-[11px] border transition-all ${
+                        passPenalty === 0
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500'
+                          : 'bg-slate-900 border-slate-800 text-slate-400'
+                      }`}
+                    >
+                      Ücretsiz (0P)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPassPenalty(-1); setActivePreset('custom'); }}
+                      className={`px-2.5 py-1 rounded-lg font-black text-[11px] border transition-all ${
+                        passPenalty === -1
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500'
+                          : 'bg-slate-900 border-slate-800 text-slate-400'
+                      }`}
+                    >
+                      Cezalı (-1P)
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {/* 3. Tur Başına Tabu Limiti */}
+              {/* 4. Tur Başına Tabu Limiti */}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -487,7 +635,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                     <button
                       key={opt.val}
                       type="button"
-                      onClick={() => setTabuLimit(opt.val)}
+                      onClick={() => { setTabuLimit(opt.val); setActivePreset('custom'); }}
                       className={`py-2 rounded-xl text-[11px] font-black border transition-all ${
                         tabuLimit === opt.val
                           ? 'bg-red-500/25 text-red-300 border-red-500 shadow-sm'
@@ -500,7 +648,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                 </div>
               </div>
 
-              {/* 4. Tabu Cezası & Doğru Puanı */}
+              {/* 5. Tabu Cezası & Doğru Puanı */}
               <div className="grid grid-cols-2 gap-2.5">
                 {/* Tabu Cezası */}
                 <div>
@@ -513,7 +661,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                       <button
                         key={pen}
                         type="button"
-                        onClick={() => setTabuPenalty(pen)}
+                        onClick={() => { setTabuPenalty(pen); setActivePreset('custom'); }}
                         className={`py-2 rounded-xl text-xs font-black border transition-all ${
                           tabuPenalty === pen
                             ? 'bg-orange-500/25 text-orange-300 border-orange-500 shadow-sm'
@@ -537,7 +685,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                       <button
                         key={pts}
                         type="button"
-                        onClick={() => setCorrectPoints(pts)}
+                        onClick={() => { setCorrectPoints(pts); setActivePreset('custom'); }}
                         className={`py-2 rounded-xl text-xs font-black border transition-all ${
                           correctPoints === pts
                             ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500 shadow-sm'
@@ -551,7 +699,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                 </div>
               </div>
 
-              {/* 5. Toplam Tur Sayısı & Hedef Skor */}
+              {/* 6. Toplam Tur Sayısı */}
               <div>
                 <label className="text-xs font-black text-white uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
                   <Trophy className="w-3.5 h-3.5 text-purple-400" /> Toplam Tur Sayısı
@@ -561,7 +709,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                     <button
                       key={rounds}
                       type="button"
-                      onClick={() => setTotalRounds(rounds)}
+                      onClick={() => { setTotalRounds(rounds); setActivePreset('custom'); }}
                       className={`py-2 rounded-xl text-xs font-black border transition-all ${
                         totalRounds === rounds
                           ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-500/20'
@@ -574,7 +722,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                 </div>
               </div>
 
-              {/* 6. Hedef Kazanma Puanı & Altın Tur */}
+              {/* 7. Hedef Kazanma Puanı, Tur Arası Geçiş & Altın Tur */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                 {/* Target Score */}
                 <div>
@@ -591,7 +739,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                       <button
                         key={sc.val}
                         type="button"
-                        onClick={() => setTargetScore(sc.val === 0 ? null : sc.val)}
+                        onClick={() => { setTargetScore(sc.val === 0 ? null : sc.val); setActivePreset('custom'); }}
                         className={`py-1.5 rounded-xl text-[11px] font-black border transition-all ${
                           (targetScore === sc.val || (sc.val === 0 && targetScore === null))
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500'
@@ -604,20 +752,47 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                   </div>
                 </div>
 
-                {/* Golden Round Switch */}
-                <label className="p-2.5 bg-slate-950/80 rounded-2xl border border-slate-800 flex items-center justify-between cursor-pointer">
-                  <div>
-                    <span className="text-xs font-black text-amber-300 block">Altın Tur (2x)</span>
-                    <span className="text-[9px] text-slate-400">Son turda puanlar 2 katı & beraberlik uzatması</span>
+                {/* Tur Arası Mola Sayacı */}
+                <div>
+                  <label className="text-[11px] font-black text-slate-300 block mb-1">
+                    Tur Arası Hazırlık Süresi:
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[
+                      { val: 0, label: 'Manuel' },
+                      { val: 3, label: '3 Saniye' },
+                      { val: 5, label: '5 Saniye' },
+                    ].map((bd) => (
+                      <button
+                        key={bd.val}
+                        type="button"
+                        onClick={() => { setBreakDuration(bd.val); setActivePreset('custom'); }}
+                        className={`py-1.5 rounded-xl text-[11px] font-black border transition-all ${
+                          breakDuration === bd.val
+                            ? 'bg-indigo-500/25 text-indigo-300 border-indigo-500'
+                            : 'bg-slate-950 border-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {bd.label}
+                      </button>
+                    ))}
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={goldenRound}
-                    onChange={(e) => setGoldenRound(e.target.checked)}
-                    className="rounded accent-amber-500 w-4 h-4 cursor-pointer"
-                  />
-                </label>
+                </div>
               </div>
+
+              {/* Altın Tur Switch */}
+              <label className="p-3 bg-slate-950/90 rounded-2xl border border-slate-800 flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-black text-amber-300 block">Altın Tur (2x) & Beraberlik Uzatması</span>
+                  <span className="text-[10px] text-slate-400">Son turda veya beraberlikte tüm puanlar 2 katı sayılır</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={goldenRound}
+                  onChange={(e) => { setGoldenRound(e.target.checked); setActivePreset('custom'); }}
+                  className="rounded accent-amber-500 w-4 h-4 cursor-pointer"
+                />
+              </label>
             </div>
           )}
 
@@ -720,9 +895,9 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
               variant="ghost"
               size="md"
               onClick={onClose}
-              className="text-xs text-slate-400 hover:text-white"
+              className="text-xs font-bold text-slate-400"
             >
-              Vazgeç
+              İptal
             </Button>
           )}
 
@@ -730,35 +905,29 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
             <Button
               variant="primary"
               size="md"
-              onClick={() => {
-                analytics.gameSetupStep(currentStep + 1, currentStep === 1 ? 'rules' : 'decks');
-                setCurrentStep((currentStep + 1) as any);
-                soundManager.play('correct');
-              }}
-              className="text-xs font-black py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-500/25"
+              onClick={() => setCurrentStep((currentStep + 1) as any)}
+              className="text-xs font-black py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-500/25 ml-auto"
             >
-              <span>İleri: {currentStep === 1 ? 'Kurallar' : 'Desteler'}</span>
-              <ArrowRight className="w-4 h-4 ml-1.5" />
+              İleri: {currentStep === 1 ? 'Kurallar' : 'Desteler'} <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
             <Button
               variant="primary"
               size="md"
               onClick={handleStartGame}
-              className="text-xs font-black py-3 px-6 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:opacity-95 text-white shadow-xl shadow-emerald-500/25 flex items-center gap-2"
+              className="text-xs font-black py-2.5 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-95 shadow-lg shadow-emerald-500/25 ml-auto flex items-center gap-1.5"
             >
-              <Play className="w-4 h-4 fill-white" />
-              <span>Oyunu Başlat ({teams.length} Takım)</span>
+              <Play className="w-4 h-4 fill-white" /> Oyunu Başlat
             </Button>
           )}
         </div>
       </div>
 
-      {/* Paywall Trigger Modal */}
+      {/* Paywall Modal for 3+ Teams & VIP Decks */}
       <PaywallModal
         isOpen={paywallOpen}
         onClose={() => setPaywallOpen(false)}
-        triggerSource={`setup_${paywallTrigger}`}
+        triggerSource={paywallTrigger}
       />
     </div>
   );

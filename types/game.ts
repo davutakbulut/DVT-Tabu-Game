@@ -43,16 +43,18 @@ export interface Player {
 
 export interface GameSettings {
   team_count: number;
-  turn_duration: number; // 30 - 120s
+  turn_duration: number; // 30 - 180s
   total_rounds: number; // e.g. 6 rounds
   pass_limit: number; // 0 - 10, or 999 for unlimited
+  pass_penalty?: number; // 0, -1
   tabu_limit: number; // 0 for unlimited, or 1, 2, 3, 5 max tabus per turn
   buzzer_penalty: number; // -1, -2, 0
   tabu_penalty_points?: number;
-  correct_points: number; // 1, 2
+  correct_points: number; // 1, 2, 3
   target_score?: number | null;
   winning_score?: number | null;
   golden_round_enabled?: boolean;
+  break_duration?: number; // 3, 5, 0 (manual)
   categories: (Category | string)[];
   difficulty: Difficulty | 'Tümü';
   deck_id?: string | null;
