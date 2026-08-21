@@ -6,6 +6,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useUserStore } from '@/stores/userStore';
 import { Button } from '@/components/ui/Button';
+import { ActiveGameBanner } from '@/components/game/ActiveGameBanner';
 import { AiDailyBanner } from '@/components/ai/AiDailyBanner';
 import { DeckGeneratorModal } from '@/components/ai/DeckGeneratorModal';
 import { GameSetupModal } from '@/components/game/GameSetupModal';
@@ -153,7 +154,10 @@ export default function HomePage() {
       </header>
 
       {/* Hero / Main Section */}
-      <div className="flex-1 flex flex-col justify-center gap-5 my-4">
+      <div className="flex-1 flex flex-col justify-center gap-4 my-3">
+        {/* Active Ongoing Game Recovery Banner */}
+        <ActiveGameBanner />
+
         {/* Gemini AI Daily Insights Banner */}
         <AiDailyBanner
           currentSettings={settings}

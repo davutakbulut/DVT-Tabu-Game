@@ -62,7 +62,8 @@ import {
   Volume2,
   Megaphone,
   ExternalLink,
-  Tv
+  Tv,
+  Gamepad2
 } from 'lucide-react';
 import { sendLog } from '@/lib/logger';
 import { DEFAULT_ONBOARDING_STEPS, OnboardingStepItem } from '@/types/onboarding';
@@ -83,8 +84,8 @@ export default function AdminPortalPage() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
 
-  // Active Tab: 'cards' | 'monetization' | 'ads' | 'analytics' | 'logs' | 'versions' | 'onboarding'
-  const [activeTab, setActiveTab] = useState<'cards' | 'monetization' | 'ads' | 'analytics' | 'logs' | 'versions' | 'onboarding'>('cards');
+  // Active Tab: 'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'logs' | 'versions' | 'onboarding'
+  const [activeTab, setActiveTab] = useState<'cards' | 'monetization' | 'ads' | 'analytics' | 'game_inspector' | 'logs' | 'versions' | 'onboarding'>('cards');
 
   // Analytics Data
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -175,6 +176,20 @@ export default function AdminPortalPage() {
   const [isTestAdModalOpen, setIsTestAdModalOpen] = useState(false);
   const [savingAdConfig, setSavingAdConfig] = useState(false);
   const [adConfigSavedSuccess, setAdConfigSavedSuccess] = useState(false);
+
+  // Game Sessions & Word Analytics State
+  const [gameAnalyticsData, setGameAnalyticsData] = useState<any>(null);
+  const [loadingGameAnalytics, setLoadingGameAnalytics] = useState(false);
+  const [wordSearchQuery, setWordSearchQuery] = useState('');
+
+  const fetchGameAnalytics = () => {
+    setLoadingGameAnalytics(true);
+    fetch('/api/games/analytics')
+      .then((res) => res.json())
+      .then((data) => setGameAnalyticsData(data))
+      .catch(() => {})
+      .finally(() => setLoadingGameAnalytics(false));
+  };
 
   const fetchMetrics = () => {
     setLoadingMetrics(true);
@@ -417,8 +432,15 @@ export default function AdminPortalPage() {
       fetchLogsStats();
       fetchOnboardingSteps();
       fetchAdsData();
+      fetchGameAnalytics();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'game_inspector') {
+      fetchGameAnalytics();
+    }
+  }, [isAuthenticated, activeTab]);
 
   useEffect(() => {
     if (isAuthenticated && activeTab === 'logs') {
@@ -829,6 +851,7 @@ export default function AdminPortalPage() {
       <nav className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {[
           { id: 'cards', label: 'Kart & Deste Havuzu (CMS)', icon: <Layers className="w-4 h-4" /> },
+          { id: 'game_inspector', label: '🎮 Oyun & Kelime Raporu', icon: <Gamepad2 className="w-4 h-4" /> },
           { id: 'logs', label: 'Hata & Log Merkezi', icon: <Bug className="w-4 h-4" />, badge: logStatsSummary.unresolved > 0 ? logStatsSummary.unresolved : null },
           { id: 'monetization', label: 'Monetizasyon & Paywall', icon: <Crown className="w-4 h-4" /> },
           { id: 'ads', label: 'Reklam & Ad Engine', icon: <Megaphone className="w-4 h-4" /> },
@@ -855,6 +878,270 @@ export default function AdminPortalPage() {
           </button>
         ))}
       </nav>
+
+      {/* TAB: GAME SESSIONS & WORD PERFORMANCE INSPECTOR */}
+      {activeTab === 'game_inspector' && (
+        <div className="flex flex-col gap-5">
+          {/* Header Controls */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Gamepad2 className="w-4 h-4 text-emerald-400" /> Oyun Denetimi & Kelime Zorluk Raporları
+              </h3>
+              <span className="text-[10px] text-slate-400">
+                Oynanan tüm maçlar, anlık durumlar, nerede kaldıkları ve kelime başarı/tabu metrikleri
+              </span>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchGameAnalytics}
+              disabled={loadingGameAnalytics}
+              className="text-xs"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 mr-1 ${loadingGameAnalytics ? 'animate-spin' : ''}`} /> Yenile
+            </Button>
+          </div>
+
+          {/* Top KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1 shadow-lg">
+              <span className="text-[10px] font-bold text-slate-400">Toplam Oynanan Oyun</span>
+              <span className="text-2xl font-black text-indigo-400 font-mono">
+                {gameAnalyticsData?.summary?.totalGames || 0}
+              </span>
+              <span className="text-[10px] text-slate-500">Tüm Misafir & Üyeler</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1 shadow-lg">
+              <span className="text-[10px] font-bold text-slate-400">Tamamlanan Maçlar</span>
+              <span className="text-2xl font-black text-emerald-400 font-mono">
+                {gameAnalyticsData?.summary?.completedGames || 0}
+              </span>
+              <span className="text-[10px] text-emerald-400/80 font-bold">
+                %{gameAnalyticsData?.summary?.completionRate || 0} Bitirme Oranı
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1 shadow-lg">
+              <span className="text-[10px] font-bold text-slate-400">Anlık Devam Edenler</span>
+              <span className="text-2xl font-black text-amber-400 font-mono">
+                {gameAnalyticsData?.summary?.inProgressGames || 0}
+              </span>
+              <span className="text-[10px] text-amber-400/80 font-bold">Aktif Arenada</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-1 shadow-lg">
+              <span className="text-[10px] font-bold text-slate-400">İncelenen Kelime Olayı</span>
+              <span className="text-2xl font-black text-purple-400 font-mono">
+                {gameAnalyticsData?.summary?.totalCardEvents || 0}
+              </span>
+              <span className="text-[10px] text-slate-500">Doğru, Pas & Tabular</span>
+            </div>
+          </div>
+
+          {/* Section 1: Recent Game Sessions */}
+          <div className="flex flex-col gap-3">
+            <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Trophy className="w-3.5 h-3.5 text-amber-400" /> Son Oyunlar & Durumları (Nerede Kaldılar?)
+            </h4>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-950/80 border-b border-slate-800 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      <th className="py-3 px-4">Tarih & Oyuncu</th>
+                      <th className="py-3 px-4">Durum</th>
+                      <th className="py-3 px-4">Tur İlerlemesi</th>
+                      <th className="py-3 px-4">Takımlar & Skorlar</th>
+                      <th className="py-3 px-4">Kazanan</th>
+                      <th className="py-3 px-4">Doğru / Pas / Tabu</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 font-medium">
+                    {loadingGameAnalytics ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-500">
+                          Oyun verileri yükleniyor...
+                        </td>
+                      </tr>
+                    ) : (gameAnalyticsData?.recentGames || []).length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-500">
+                          Henüz kayıtlı oyun verisi bulunmuyor.
+                        </td>
+                      </tr>
+                    ) : (
+                      (gameAnalyticsData?.recentGames || []).map((game: any) => {
+                        const dateStr = new Date(game.created_at).toLocaleDateString('tr-TR', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        });
+
+                        return (
+                          <tr key={game.id} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-white text-xs">{dateStr}</div>
+                              <div className="text-[10px] text-slate-500 font-mono truncate max-w-[120px]">
+                                {game.user_id || game.guest_id}
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${
+                                game.status === 'finished'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                  : game.status === 'in_progress'
+                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 animate-pulse'
+                                  : 'bg-slate-800 text-slate-400 border-slate-700'
+                              }`}>
+                                {game.status === 'finished' ? 'Tamamlandı 🏆' : game.status === 'in_progress' ? 'Devam Ediyor ⏱️' : 'Terk Edildi'}
+                              </span>
+                            </td>
+
+                            <td className="py-3 px-4 font-mono font-bold text-slate-300 text-xs">
+                              Tur {game.current_round} / {game.total_rounds || 6}
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <div className="flex flex-wrap gap-1 font-mono text-[11px]">
+                                {(game.teams || []).map((t: any) => (
+                                  <span key={t.id} className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800" style={{ color: t.color || '#fff' }}>
+                                    {t.name?.split(' ')[0]}: {t.score}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-4 font-bold text-amber-300">
+                              {game.winner_team_name ? (
+                                <div className="flex items-center gap-1">
+                                  <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                  <span>{game.winner_team_name} ({game.winner_score}P)</span>
+                                </div>
+                              ) : (
+                                <span className="text-slate-500 text-[11px]">-</span>
+                              )}
+                            </td>
+
+                            <td className="py-3 px-4 font-mono text-[11px]">
+                              <span className="text-emerald-400 font-bold">{game.total_correct || 0} D</span> •{' '}
+                              <span className="text-amber-400 font-bold">{game.total_pass || 0} P</span> •{' '}
+                              <span className="text-red-400 font-bold">{game.total_tabu || 0} T</span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Word Performance & Difficulty Analytics */}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 text-orange-400" /> Kelime Seviyesinde Başarı & Dinamik Zorluk Analizi
+                </h4>
+                <span className="text-[10px] text-slate-400">
+                  Kelimelerin maçlarda kaç kez görüldüğü, bilinme, pas ve tabu yapılma oranları
+                </span>
+              </div>
+
+              <input
+                type="text"
+                value={wordSearchQuery}
+                onChange={(e) => setWordSearchQuery(e.target.value)}
+                placeholder="Kelime Ara..."
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 w-full sm:w-48"
+              />
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-950/80 border-b border-slate-800 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      <th className="py-3 px-4">Kelime</th>
+                      <th className="py-3 px-4">Görülme Sayısı</th>
+                      <th className="py-3 px-4">Doğru Oranı</th>
+                      <th className="py-3 px-4">Pas Oranı</th>
+                      <th className="py-3 px-4">Tabu / Hata Oranı</th>
+                      <th className="py-3 px-4">Dinamik Zorluk</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 font-medium">
+                    {loadingGameAnalytics ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-500">
+                          Kelime analitikleri hesaplanıyor...
+                        </td>
+                      </tr>
+                    ) : (
+                      (gameAnalyticsData?.words || [])
+                        .filter((w: any) =>
+                          !wordSearchQuery || w.word.toLowerCase().includes(wordSearchQuery.toLowerCase())
+                        )
+                        .slice(0, 50)
+                        .map((w: any) => (
+                          <tr key={w.word} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="py-3 px-4 font-black text-white text-xs">
+                              {w.word}
+                            </td>
+
+                            <td className="py-3 px-4 font-mono text-slate-300">
+                              {w.seen} kez
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono font-bold text-emerald-400">%{w.correctRate}</span>
+                                <span className="text-[10px] text-slate-500 font-mono">({w.correct})</span>
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono font-bold text-amber-400">%{w.passRate}</span>
+                                <span className="text-[10px] text-slate-500 font-mono">({w.pass})</span>
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono font-bold text-rose-400">%{w.tabuRate}</span>
+                                <span className="text-[10px] text-slate-500 font-mono">({w.tabu})</span>
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${
+                                w.difficulty === 'Zor'
+                                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                  : w.difficulty === 'Kolay'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                  : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                              }`}>
+                                {w.difficulty === 'Zor' ? '🔥 Zor' : w.difficulty === 'Kolay' ? '🟢 Kolay' : '⚡ Orta'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB: ERROR & LOG CENTER */}
       {activeTab === 'logs' && (
