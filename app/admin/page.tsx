@@ -63,7 +63,8 @@ import {
   Megaphone,
   ExternalLink,
   Tv,
-  Gamepad2
+  Gamepad2,
+  RefreshCw
 } from 'lucide-react';
 import { sendLog } from '@/lib/logger';
 import { DEFAULT_ONBOARDING_STEPS, OnboardingStepItem } from '@/types/onboarding';
