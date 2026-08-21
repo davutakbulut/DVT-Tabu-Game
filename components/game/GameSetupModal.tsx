@@ -495,31 +495,38 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                     key={team.id}
                     className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3 shadow-md"
                   >
-                    {/* Top Row: Color + Name + Randomize + Delete */}
+                    {/* Top Row: Color + Name Input + Randomize + Delete */}
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-4 h-4 rounded-full shrink-0 shadow-sm"
+                        className="w-4 h-4 rounded-full shrink-0 shadow-md ring-2 ring-white/20"
                         style={{ backgroundColor: team.color }}
                       />
-                      <input
-                        type="text"
-                        value={team.name}
-                        onChange={(e) => handleUpdateTeamName(team.id, e.target.value)}
-                        className="bg-transparent text-xs font-black text-white flex-1 focus:outline-none border-b border-transparent focus:border-indigo-500 pb-0.5"
-                        placeholder="Takım Adı..."
-                        maxLength={22}
-                      />
-                      <button
-                        onClick={() => handleRandomizeTeamName(team.id)}
-                        className="p-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white"
-                        title="Rastgele Takım Adı"
-                      >
-                        <Dices className="w-3.5 h-3.5" />
-                      </button>
+                      
+                      {/* Explicit Styled Name Input */}
+                      <div className="flex-1 flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/80 focus-within:border-indigo-500 rounded-xl px-2.5 py-1.5 transition-all">
+                        <input
+                          type="text"
+                          value={team.name}
+                          onChange={(e) => handleUpdateTeamName(team.id, e.target.value)}
+                          className="bg-transparent text-xs font-black text-white flex-1 focus:outline-none placeholder-slate-500"
+                          placeholder="Takım Adı Yazın..."
+                          maxLength={22}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRandomizeTeamName(team.id)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors"
+                          title="Rastgele Eğlenceli Takım Adı Seç"
+                        >
+                          <Dices className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
                       {teams.length > 2 && (
                         <button
+                          type="button"
                           onClick={() => handleRemoveTeam(team.id)}
-                          className="p-1.5 rounded-lg bg-slate-900 text-rose-400 hover:text-rose-300"
+                          className="p-2 rounded-xl bg-slate-900/80 border border-slate-800 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors shrink-0"
                           title="Takımı Sil"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
