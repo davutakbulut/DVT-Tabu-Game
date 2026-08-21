@@ -34,9 +34,9 @@ export default function RoomLobbyPage() {
     if (!currentRoom || currentRoom.code !== roomCode) {
       // Mock room titles based on code
       const titles: Record<string, string> = {
-        TABU01: 'Akşam Partisi Odası 🔥',
-        TABU99: 'Pro Tabu Kapışması 🏆',
-        NOSTAL: '90lar & 2000ler Gecesi 🎸',
+        TABU01: 'Akşam Partisi Odası',
+        TABU99: 'Pro Tabu Kapışması',
+        NOSTAL: '90lar & 2000ler Gecesi',
       };
       const title = titles[roomCode] || `${guestName || 'Misafir'}'in Tabu Odası`;
       const isPrivate = roomCode === 'TABU99' || Boolean(pinParam);

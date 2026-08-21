@@ -94,7 +94,7 @@ export default function SummaryPage() {
       } catch {
         // Fallback AI summary
         setAiSummary({
-          match_headline: 'NEFES KESEN DERBİ: KELİME CANAVARLARI SAHNEDE! 🚀',
+          match_headline: 'NEFES KESEN DERBİ: KELİME CANAVARLARI SAHNEDE!',
           commentary: `${winner?.name} kusursuz takım iletişimi ve hızlı pas stratejisiyle hak edilmiş bir şampiyonluk kazandı!`,
           mvp_spotlight: `${winner?.name} takımının anlatıcıları gecenin tartışmasız yıldızı oldu.`,
           key_takeaways: [
@@ -111,7 +111,7 @@ export default function SummaryPage() {
   }, []);
 
   const handleShare = () => {
-    const text = `🏆 DVT Tabu Game Şampiyonu: ${winner?.name} (${winner?.score} Puan)! Sen de arkadaşlarınla hemen Tabu oyna!`;
+    const text = `DVT Tabu Game Şampiyonu: ${winner?.name} (${winner?.score} Puan)! Sen de arkadaşlarınla hemen Tabu oyna!`;
     if (typeof navigator !== 'undefined' && navigator.share) {
       navigator.share({ title: 'DVT Tabu Game', text, url: window.location.origin }).catch(() => {});
     } else {
@@ -136,8 +136,9 @@ export default function SummaryPage() {
         <span className="text-xs uppercase font-bold tracking-widest text-indigo-400 block">
           Oyun Tamamlandı
         </span>
-        <h1 className="text-3xl font-black text-white mt-1">
-          {winner?.name} Kazandı! 👑
+        <h1 className="text-3xl font-black text-white mt-1 inline-flex items-center justify-center gap-2">
+          <span>{winner?.name} Kazandı!</span>
+          <Crown className="w-7 h-7 text-amber-400 fill-amber-400 inline" />
         </h1>
       </div>
 

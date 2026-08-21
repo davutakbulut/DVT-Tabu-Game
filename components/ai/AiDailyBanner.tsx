@@ -83,7 +83,7 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
   const handleSelectMode = (mode: any) => {
     if (onApplyMode) {
       onApplyMode(mode);
-      const msg = `✓ ${mode.title} seçildi: ${mode.recommended_duration_seconds}s Süre, ${mode.recommended_pass_limit || 2} Pas olarak ayarlandı!`;
+      const msg = `${mode.title} seçildi: ${mode.recommended_duration_seconds}s Süre, ${mode.recommended_pass_limit || 2} Pas olarak ayarlandı!`;
       setToastMessage(msg);
       setTimeout(() => setToastMessage(null), 3500);
     }
@@ -100,7 +100,7 @@ export const AiDailyBanner: React.FC<AiDailyBannerProps> = ({
       };
       onAddBonusCard(card);
       setCardAdded(true);
-      setToastMessage(`✓ "${card.main_word}" günün bonus kartı oyuna eklendi!`);
+      setToastMessage(`"${card.main_word}" günün bonus kartı oyuna eklendi!`);
       setTimeout(() => setToastMessage(null), 3500);
     }
   };

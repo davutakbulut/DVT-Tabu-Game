@@ -20,6 +20,7 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Dices,
   AlertCircle,
   KeyRound
 } from 'lucide-react';
@@ -95,7 +96,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const simEmail = (customName.toLowerCase().replace(/\s+/g, '') || 'oyuncu') + '@gmail.com';
         await loginWithSocial('google', simEmail, customName || 'Google Oyuncusu', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100');
         soundManager.play('start');
-        setSuccessMsg('Google hesabınız başarıyla bağlandı! 🎉');
+        setSuccessMsg('Google hesabınız başarıyla bağlandı!');
         setTimeout(() => {
           onClose();
           if (onSuccess) onSuccess();
@@ -126,7 +127,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const simEmail = (customName.toLowerCase().replace(/\s+/g, '') || 'oyuncu') + '@icloud.com';
         await loginWithSocial('apple', simEmail, customName || 'Apple Oyuncusu');
         soundManager.play('start');
-        setSuccessMsg('Apple hesabınız başarıyla bağlandı! 🍏');
+        setSuccessMsg('Apple hesabınız başarıyla bağlandı!');
         setTimeout(() => {
           onClose();
           if (onSuccess) onSuccess();
@@ -176,7 +177,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           );
 
           soundManager.play('start');
-          setSuccessMsg('Hesabınız başarıyla oluşturuldu! Hoş geldiniz! 🎉');
+          setSuccessMsg('Hesabınız başarıyla oluşturuldu! Hoş geldiniz!');
           setTimeout(() => {
             onClose();
             if (onSuccess) onSuccess();
@@ -193,7 +194,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           await loginWithSocial('google', email, name);
 
           soundManager.play('start');
-          setSuccessMsg(`Tekrar hoş geldin, ${name}! 🚀`);
+          setSuccessMsg(`Tekrar hoş geldin, ${name}!`);
           setTimeout(() => {
             onClose();
             if (onSuccess) onSuccess();
@@ -203,7 +204,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         // Fallback local update
         await loginWithSocial('google', email, customName || email.split('@')[0]);
         soundManager.play('start');
-        setSuccessMsg(`Giriş başarılı! Hoş geldin! 🚀`);
+        setSuccessMsg(`Giriş başarılı! Hoş geldin!`);
         setTimeout(() => {
           onClose();
           if (onSuccess) onSuccess();
@@ -343,10 +344,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <button
                       type="button"
                       onClick={handleRandomName}
-                      className="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold shrink-0"
+                      className="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold shrink-0 flex items-center gap-1"
                       title="Rastgele İsim Üret"
                     >
-                      🎲 Zar At
+                      <Dices className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Zar At</span>
                     </button>
                   </div>
 

@@ -85,7 +85,9 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center animate-bounce">
               <Check className="w-10 h-10" />
             </div>
-            <h3 className="text-2xl font-black text-white">Tebrikler! 🎉</h3>
+            <h3 className="text-2xl font-black text-white inline-flex items-center gap-2">
+              Tebrikler! <Sparkles className="w-6 h-6 text-amber-400" />
+            </h3>
             <p className="text-xs text-slate-300">
               DVT Tabu PRO üyeliğiniz aktif edildi. Tüm kilitler açıldı!
             </p>

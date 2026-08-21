@@ -1,5 +1,5 @@
 /**
- * 🚨 DVT Tabu Game - Universal Logger & Error Telemetry Service
+ *  DVT Tabu Game - Universal Logger & Error Telemetry Service
  */
 
 export type LogLevel = 'fatal' | 'error' | 'warn' | 'info';

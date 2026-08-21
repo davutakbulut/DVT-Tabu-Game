@@ -48,9 +48,9 @@ export default function RoomsPage() {
 
   // Mock available rooms for instant discovery
   const mockRooms = [
-    { code: 'TABU01', title: 'Akşam Partisi Odası 🔥', players: 4, maxPlayers: 8, isPrivate: false, duration: 60 },
-    { code: 'TABU99', title: 'Pro Tabu Kapışması 🏆', players: 2, maxPlayers: 6, isPrivate: true, duration: 45 },
-    { code: 'NOSTAL', title: '90lar & 2000ler Gecesi 🎸', players: 3, maxPlayers: 8, isPrivate: false, duration: 60 },
+    { code: 'TABU01', title: 'Akşam Partisi Odası', players: 4, maxPlayers: 8, isPrivate: false, duration: 60 },
+    { code: 'TABU99', title: 'Pro Tabu Kapışması', players: 2, maxPlayers: 6, isPrivate: true, duration: 45 },
+    { code: 'NOSTAL', title: '90lar & 2000ler Gecesi', players: 3, maxPlayers: 8, isPrivate: false, duration: 90 },
   ];
 
   return (

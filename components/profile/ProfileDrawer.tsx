@@ -82,14 +82,14 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
 
       await loginWithSocial(prov, email, name, avatar);
       setLoadingProvider(null);
-      setSuccessToast(`✓ ${prov.toUpperCase()} hesabı başarıyla bağlandı!`);
+      setSuccessToast(` ${prov.toUpperCase()} hesabı başarıyla bağlandı!`);
       setTimeout(() => setSuccessToast(null), 3000);
     }, 800);
   };
 
   const handleLogout = async () => {
     await logoutUser();
-    setSuccessToast('✓ Hesaptan çıkış yapıldı, misafir profiline dönüldü.');
+    setSuccessToast(' Hesaptan çıkış yapıldı, misafir profiline dönüldü.');
     setTimeout(() => setSuccessToast(null), 3000);
   };
 
@@ -192,7 +192,9 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
               <div className="flex items-center gap-2">
                 <Crown className="w-4 h-4 text-amber-400" />
                 <div>
-                  <span className="block leading-tight">Pro'ya Yükselt 👑</span>
+                  <span className="leading-tight inline-flex items-center gap-1">
+                    Pro'ya Yükselt <Crown className="w-3 h-3 text-amber-400 fill-amber-400 inline" />
+                  </span>
                   <span className="text-[10px] text-amber-200/80 font-normal">Sınırsız AI & Reklamsız</span>
                 </div>
               </div>
@@ -267,11 +269,11 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
               </button>
             </div>
             <div className="flex items-center justify-between text-xs text-slate-300">
-              <span>⏱️ Tur Süresi:</span>
+              <span> Tur Süresi:</span>
               <span className="font-mono font-bold text-white">{turnDuration} Saniye</span>
             </div>
             <div className="flex items-center justify-between text-xs text-slate-300">
-              <span>🔄 Pas Hakkı:</span>
+              <span> Pas Hakkı:</span>
               <span className="font-mono font-bold text-white">{passLimit} Hak</span>
             </div>
           </div>

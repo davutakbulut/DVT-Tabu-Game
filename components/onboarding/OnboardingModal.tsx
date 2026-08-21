@@ -161,7 +161,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
           {step.interactive_type === 'buzzer_tester' && (
             <div className="w-full bg-slate-950/70 border border-rose-500/30 rounded-2xl p-4 flex flex-col items-center gap-3 my-1">
               <span className="text-[10px] text-rose-300 font-bold uppercase tracking-wider">
-                🚨 Canlı Buzzer Deneyimi (Bas ve Sesi Duy)
+                 Canlı Buzzer Deneyimi (Bas ve Sesi Duy)
               </span>
 
               <button
@@ -183,7 +183,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
               <div className="text-[10px] text-slate-400 font-mono">
                 {buzzerPressedCount > 0 ? (
                   <span className="text-rose-400 font-bold animate-bounce block">
-                    ⚡ {buzzerPressedCount} kez basıldı! Rakip Tabu Yaptı (-1 Ceza)
+                     {buzzerPressedCount} kez basıldı! Rakip Tabu Yaptı (-1 Ceza)
                   </span>
                 ) : (
                   'Butona basarak titreşim ve sesi test et'
@@ -202,8 +202,9 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
               <div className="flex flex-wrap gap-1 pt-0.5">
                 {['Kafein', 'Fincan', 'Sıcak', 'Starbucks', 'İçecek'].map((w) => (
-                  <span key={w} className="text-[10px] bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-lg font-bold">
-                    ✕ {w}
+                  <span key={w} className="text-[10px] bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-lg font-bold inline-flex items-center gap-1">
+                    <X className="w-2.5 h-2.5 text-rose-400" />
+                    <span>{w}</span>
                   </span>
                 ))}
               </div>
@@ -218,7 +219,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 <span className="text-xs font-black text-purple-300">Gemini 3.5 Akıllı Deste Motoru</span>
               </div>
               <div className="text-[11px] text-slate-300 italic bg-slate-950/60 p-2 rounded-xl border border-purple-500/20">
-                💬 "2026 Viral Meme'leri ve Skibidi Raconları hakkında 10 kart üret..."
+                "2026 Viral Meme'leri ve popüler internet trendleri hakkında 10 kart üret..."
               </div>
             </div>
           )}
@@ -278,7 +279,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
           >
             {currentStep === steps.length - 1 ? (
               <span className="flex items-center justify-center gap-2">
-                {step.cta_text || '⚔️ Arenaya Başla!'} <Check className="w-5 h-5" />
+                {step.cta_text || ' Arenaya Başla!'} <Check className="w-5 h-5" />
               </span>
             ) : (
               <span className="flex items-center justify-center gap-2">

@@ -36,7 +36,10 @@ import {
   Radio,
   Gamepad2,
   ChevronRight,
-  Star
+  Star,
+  Clock,
+  RotateCcw,
+  Check
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
@@ -206,8 +209,8 @@ export default function HomePage() {
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
               Yasakları Aş, Takımını <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400">
-                Zirveye Taşı! 🏆
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 inline-flex items-center gap-1.5">
+                Zirveye Taşı! <Trophy className="w-5 h-5 text-amber-400 inline-block" />
               </span>
             </h2>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
@@ -246,8 +249,8 @@ export default function HomePage() {
                 <Sparkles className="w-3 h-3 text-indigo-400" /> Giriş Yap
               </button>
             ) : (
-              <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 py-1 px-2.5 rounded-lg border border-emerald-500/20 shrink-0">
-                ✓ Bağlı
+              <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 py-1 px-2.5 rounded-lg border border-emerald-500/20 shrink-0 inline-flex items-center gap-1">
+                <Check className="w-3 h-3" /> Bağlı
               </span>
             )}
           </div>
@@ -275,15 +278,15 @@ export default function HomePage() {
 
             {/* Bottom Summary Indicators (Including Team Count) */}
             <div className="flex items-center justify-center gap-2 text-[10px] font-extrabold text-slate-400">
-              <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                👥 {teams.length} Takım
+              <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 inline-flex items-center gap-1">
+                <Users className="w-3 h-3" /> {teams.length} Takım
               </span>
               <span>•</span>
-              <span>⏱️ {settings.turn_duration}s</span>
+              <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3 text-indigo-400" /> {settings.turn_duration}s</span>
               <span>•</span>
-              <span>🔄 {settings.pass_limit >= 99 ? '∞' : settings.pass_limit} Pas</span>
+              <span className="inline-flex items-center gap-1"><RotateCcw className="w-3 h-3 text-amber-400" /> {settings.pass_limit >= 99 ? '∞' : settings.pass_limit} Pas</span>
               <span>•</span>
-              <span>🏆 {settings.total_rounds} Tur</span>
+              <span className="inline-flex items-center gap-1"><Trophy className="w-3 h-3 text-purple-400" /> {settings.total_rounds} Tur</span>
             </div>
           </div>
         </div>

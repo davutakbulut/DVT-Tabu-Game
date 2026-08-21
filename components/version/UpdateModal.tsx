@@ -78,7 +78,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose, updat
                 Mevcut: <strong className="text-slate-300">v{updateInfo.currentVersion}</strong>
               </span>
               <span className="text-indigo-400 font-bold flex items-center gap-1">
-                ➔ Yeni: <strong className="text-white">v{updateInfo.latestVersion}</strong>
+                 Yeni: <strong className="text-white">v{updateInfo.latestVersion}</strong>
               </span>
             </div>
 

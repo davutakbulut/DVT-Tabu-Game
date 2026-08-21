@@ -40,7 +40,7 @@ export async function GET(req: Request) {
   const fallbackVersions = [
     {
       version: '1.1.0',
-      title: 'v1.1.0: Onboarding, Analitik & Kesintisiz Tabu Akışı 🚀',
+      title: 'v1.1.0: Onboarding, Analitik & Kesintisiz Tabu Akışı ',
       release_date: new Date().toISOString(),
       is_mandatory: false,
       min_supported_version: '1.0.0',
@@ -53,7 +53,7 @@ export async function GET(req: Request) {
     },
     {
       version: '1.0.0',
-      title: 'v1.0.0: Lansman: DVT Tabu Game Canlıda! 🎉',
+      title: 'v1.0.0: Lansman: DVT Tabu Game Canlıda! ',
       release_date: '2026-08-20T12:00:00.000Z',
       is_mandatory: false,
       min_supported_version: '1.0.0',

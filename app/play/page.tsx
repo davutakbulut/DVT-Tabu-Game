@@ -12,7 +12,7 @@ import { ScoreBoard } from '@/components/game/ScoreBoard';
 import { Timer } from '@/components/game/Timer';
 import { Button } from '@/components/ui/Button';
 import { InterstitialAdModal } from '@/components/ads/InterstitialAdModal';
-import { Play, Pause, RotateCcw, AlertTriangle, ArrowRight, Trophy, CheckCircle2, FastForward, AlertOctagon, Sparkles } from 'lucide-react';
+import { Play, Pause, RotateCcw, AlertTriangle, ArrowRight, Trophy, CheckCircle2, FastForward, AlertOctagon, Sparkles, Mic, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdConfig, DEFAULT_AD_CONFIG } from '@/types/ads';
 
@@ -160,8 +160,8 @@ export default function PlayPage() {
               </h2>
               {activePresenterName && (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 mt-2 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-black">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>🎤 Sıradaki Anlatıcı: <strong className="text-white">{activePresenterName}</strong></span>
+                  <Mic className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Sıradaki Anlatıcı: <strong className="text-white">{activePresenterName}</strong></span>
                 </div>
               )}
             </div>
@@ -203,8 +203,8 @@ export default function PlayPage() {
             </div>
 
             <div>
-              <h3 className="text-xl font-black text-white">
-                Süre Doldu! ⏱️
+              <h3 className="text-xl font-black text-white inline-flex items-center gap-1.5">
+                Süre Doldu! <Clock className="w-5 h-5 text-amber-400" />
               </h3>
               <p className="text-xs text-slate-400 mt-1">
                 {activeTeam?.name} bu turdaki süresini tamamladı.

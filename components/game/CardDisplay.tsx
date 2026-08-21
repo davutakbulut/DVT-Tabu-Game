@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Card } from '@/types/game';
 import { CATEGORY_COLORS } from '@/lib/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, ShieldAlert, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, ShieldAlert, Sparkles, Lock, AlertOctagon } from 'lucide-react';
 
 interface CardDisplayProps {
   card: Card | null;
@@ -78,8 +78,9 @@ export const CardDisplay: React.FC<CardDisplayProps> = ({ card, isSpectator = fa
       {/* Main Target Word Banner (Massive High Contrast Display) */}
       <div className="p-5 text-center bg-gradient-to-b from-indigo-950/60 via-slate-900 to-slate-900 border-b-2 border-slate-800 relative">
         {isCurtainActive ? (
-          <div className="py-4 text-slate-500 font-black text-base italic">
-            Kart Gizlendi 🔒
+          <div className="py-4 text-slate-500 font-black text-base italic flex items-center justify-center gap-1.5">
+            <span>Kart Gizlendi</span>
+            <Lock className="w-4 h-4 text-slate-400" />
           </div>
         ) : (
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white uppercase drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
@@ -90,8 +91,10 @@ export const CardDisplay: React.FC<CardDisplayProps> = ({ card, isSpectator = fa
 
       {/* 5 Forbidden Words List (Tactile Blocks) */}
       <div className="p-4 flex-1 flex flex-col gap-2 bg-slate-950/60">
-        <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 text-center mb-0.5 flex items-center justify-center gap-1">
-          🚫 Yasaklı Kelimeler 🚫
+        <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 text-center mb-0.5 flex items-center justify-center gap-1.5">
+          <AlertOctagon className="w-3 h-3 text-rose-400" />
+          <span>Yasaklı Kelimeler</span>
+          <AlertOctagon className="w-3 h-3 text-rose-400" />
         </span>
 
         {isCurtainActive ? (

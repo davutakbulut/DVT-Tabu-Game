@@ -104,14 +104,16 @@ export function GameHistoryModal({ isOpen, onClose, guestId, userId }: GameHisto
                       <span>{dateStr}</span>
                     </div>
 
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${
                       g.status === 'finished'
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         : g.status === 'in_progress'
                         ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 animate-pulse'
                         : 'bg-slate-800 text-slate-400 border-slate-700'
                     }`}>
-                      {g.status === 'finished' ? 'Tamamlandı 🏆' : g.status === 'in_progress' ? 'Devam Ediyor ⏱️' : 'Yarıda Bırakıldı'}
+                      {g.status === 'finished' && <Trophy className="w-2.5 h-2.5" />}
+                      {g.status === 'in_progress' && <Clock className="w-2.5 h-2.5" />}
+                      <span>{g.status === 'finished' ? 'Tamamlandı' : g.status === 'in_progress' ? 'Devam Ediyor' : 'Yarıda Bırakıldı'}</span>
                     </span>
                   </div>
 

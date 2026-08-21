@@ -631,10 +631,10 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   {[
-                    { id: 'classic', label: '⚡ Klasik', desc: '60s • 3 Pas • 6 Tur' },
-                    { id: 'blitz', label: '🔥 Yıldırım', desc: '30s • 1 Pas • +2 Puan' },
-                    { id: 'hardcore', label: '💀 Cezalı', desc: '45s • 0 Pas • -2 Ceza' },
-                    { id: 'chill', label: '🎉 Parti', desc: '90s • ∞ Pas • Rahat' },
+                    { id: 'classic', label: 'Klasik', desc: '60s • 3 Pas • 6 Tur', icon: <Zap className="w-3.5 h-3.5 text-amber-400" /> },
+                    { id: 'blitz', label: 'Yıldırım', desc: '30s • 1 Pas • +2 Puan', icon: <Flame className="w-3.5 h-3.5 text-rose-400" /> },
+                    { id: 'hardcore', label: 'Cezalı', desc: '45s • 0 Pas • -2 Ceza', icon: <AlertTriangle className="w-3.5 h-3.5 text-red-400" /> },
+                    { id: 'chill', label: 'Parti', desc: '90s • ∞ Pas • Rahat', icon: <Sparkles className="w-3.5 h-3.5 text-purple-400" /> },
                   ].map((p) => (
                     <button
                       key={p.id}
@@ -646,7 +646,10 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                       }`}
                     >
-                      <span className="text-xs font-black">{p.label}</span>
+                      <span className="text-xs font-black flex items-center gap-1">
+                        {p.icon}
+                        {p.label}
+                      </span>
                       <span className="text-[9px] text-slate-400 truncate">{p.desc}</span>
                     </button>
                   ))}
@@ -665,13 +668,17 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                       key={lvl}
                       type="button"
                       onClick={() => { setDifficulty(lvl); setActivePreset('custom'); }}
-                      className={`py-2 rounded-xl text-xs font-black border transition-all ${
+                      className={`py-2 rounded-xl text-xs font-black border transition-all flex items-center justify-center gap-1 ${
                         difficulty === lvl
                           ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500 shadow-sm'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                       }`}
                     >
-                      {lvl === 'Tümü' ? '🌟 Tümü' : lvl === 'Kolay' ? '🟢 Kolay' : lvl === 'Orta' ? '⚡ Orta' : '🔥 Zor'}
+                      {lvl === 'Tümü' && <Sparkles className="w-3 h-3 text-amber-400" />}
+                      {lvl === 'Kolay' && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
+                      {lvl === 'Orta' && <Zap className="w-3 h-3 text-indigo-400" />}
+                      {lvl === 'Zor' && <Flame className="w-3 h-3 text-rose-400" />}
+                      <span>{lvl}</span>
                     </button>
                   ))}
                 </div>
@@ -1083,8 +1090,8 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                                 {deck.name}
                               </span>
                               {isMeme && (
-                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0">
-                                  VIP 🔥
+                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0 inline-flex items-center gap-1">
+                                  <Sparkles className="w-2.5 h-2.5 text-amber-400" /> VIP
                                 </span>
                               )}
                             </div>

@@ -1,5 +1,5 @@
 /**
- * 📊 DVT Tabu Game - İstemci & Sunucu Analitik ve Ekran Kalış Süresi Motoru
+ *  DVT Tabu Game - İstemci & Sunucu Analitik ve Ekran Kalış Süresi Motoru
  */
 
 const getSessionId = (): string => {

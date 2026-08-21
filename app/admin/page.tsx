@@ -256,7 +256,7 @@ export default function AdminPortalPage() {
     sendLog({
       level: 'error',
       source: 'client',
-      message: 'Test Hatası: Yönetici Paneli Üzerinden Canlı Loglama Tetiklendi 🚨',
+      message: 'Test Hatası: Yönetici Paneli Üzerinden Canlı Loglama Tetiklendi',
       stack_trace: 'Error: Simulated Admin Portal Test\n    at handleCreateTestError (app/admin/page.tsx:180:12)',
       page_url: '/admin',
       metadata: { test_mode: true, timestamp: new Date().toISOString() },
@@ -353,12 +353,12 @@ export default function AdminPortalPage() {
     const newStep: OnboardingStepItem = {
       id: newId,
       icon: 'Gamepad2',
-      badge: '✨ YENİ DENEYİM',
+      badge: 'YENİ DENEYİM',
       badge_color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
       title: 'Özel Deneyim Adımı',
       desc: 'Bu adımda oyunculara sunmak istediğiniz yeni özelliği veya eğlenceli kuralı açıklayın.',
       interactive_type: 'rules_card',
-      bullets: ['🔥 Yeni kural açıklaması', '⚡ Anında kapışma hissi'],
+      bullets: ['Yeni kural açıklaması', 'Anında kapışma hissi'],
       cta_text: 'Devam Et',
     };
     setOnboardingSteps([...onboardingSteps, newStep]);
@@ -617,7 +617,7 @@ export default function AdminPortalPage() {
       });
 
       if (res.ok) {
-        setCardSaveStatus(`✓ "${newMainWord.toUpperCase()}" kartı eklendi!`);
+        setCardSaveStatus(` "${newMainWord.toUpperCase()}" kartı eklendi!`);
         setNewMainWord('');
         setNewForbiddenWords('');
         fetchDecks();
@@ -669,7 +669,7 @@ export default function AdminPortalPage() {
 
       if (res.ok) {
         const json = await res.json();
-        setBulkSuccessMsg(`🎉 ${json.count || parsedCards.length} adet kart desteye başarıyla yüklendi!`);
+        setBulkSuccessMsg(` ${json.count || parsedCards.length} adet kart desteye başarıyla yüklendi!`);
         setBulkText('');
         fetchDecks();
         fetchCards();
@@ -851,7 +851,7 @@ export default function AdminPortalPage() {
       <nav className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {[
           { id: 'cards', label: 'Kart & Deste Havuzu (CMS)', icon: <Layers className="w-4 h-4" /> },
-          { id: 'game_inspector', label: '🎮 Oyun & Kelime Raporu', icon: <Gamepad2 className="w-4 h-4" /> },
+          { id: 'game_inspector', label: 'Oyun & Kelime Raporu', icon: <Gamepad2 className="w-4 h-4" /> },
           { id: 'logs', label: 'Hata & Log Merkezi', icon: <Bug className="w-4 h-4" />, badge: logStatsSummary.unresolved > 0 ? logStatsSummary.unresolved : null },
           { id: 'monetization', label: 'Monetizasyon & Paywall', icon: <Crown className="w-4 h-4" /> },
           { id: 'ads', label: 'Reklam & Ad Engine', icon: <Megaphone className="w-4 h-4" /> },
@@ -999,7 +999,7 @@ export default function AdminPortalPage() {
                                   ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 animate-pulse'
                                   : 'bg-slate-800 text-slate-400 border-slate-700'
                               }`}>
-                                {game.status === 'finished' ? 'Tamamlandı 🏆' : game.status === 'in_progress' ? 'Devam Ediyor ⏱️' : 'Terk Edildi'}
+                                {game.status === 'finished' ? 'Tamamlandı ' : game.status === 'in_progress' ? 'Devam Ediyor ' : 'Terk Edildi'}
                               </span>
                             </td>
 
@@ -1129,7 +1129,7 @@ export default function AdminPortalPage() {
                                   ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                                   : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                               }`}>
-                                {w.difficulty === 'Zor' ? '🔥 Zor' : w.difficulty === 'Kolay' ? '🟢 Kolay' : '⚡ Orta'}
+                                {w.difficulty === 'Zor' ? 'Zor' : w.difficulty === 'Kolay' ? 'Kolay' : 'Orta'}
                               </span>
                             </td>
                           </tr>
@@ -1250,7 +1250,7 @@ export default function AdminPortalPage() {
               onClick={handleCreateTestError}
               className="text-[11px] font-bold text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors"
             >
-              <Bug className="w-3.5 h-3.5" /> 🧪 Test Hatası Oluştur & Gönder
+              <Bug className="w-3.5 h-3.5" /> Test Hatası Oluştur & Gönder
             </button>
 
             <button
@@ -1316,9 +1316,9 @@ export default function AdminPortalPage() {
                             {log.message}
                           </h4>
                           <div className="flex items-center gap-3 text-[10px] text-slate-400 mt-1 flex-wrap font-mono">
-                            <span>📍 {log.page_url || '/'}</span>
-                            <span>🕒 {new Date(log.created_at).toLocaleString('tr-TR')}</span>
-                            {log.user_id && <span>👤 {log.user_id}</span>}
+                            <span>{log.page_url || '/'}</span>
+                            <span>{new Date(log.created_at).toLocaleString('tr-TR')}</span>
+                            {log.user_id && <span>{log.user_id}</span>}
                           </div>
                         </div>
                       </div>
@@ -1394,10 +1394,10 @@ export default function AdminPortalPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/60 p-2 rounded-2xl border border-slate-800/80">
             <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5">
               {[
-                { id: 'decks', label: '📁 Desteler & Kategoriler' },
-                { id: 'cards', label: '🗂️ Kelime Havuzu & Arama' },
-                { id: 'add_card', label: '➕ Tekil Kart Ekle' },
-                { id: 'bulk_import', label: '⚡ Toplu İçe Aktar' },
+                { id: 'decks', label: 'Desteler & Kategoriler' },
+                { id: 'cards', label: 'Kelime Havuzu & Arama' },
+                { id: 'add_card', label: 'Tekil Kart Ekle' },
+                { id: 'bulk_import', label: 'Toplu İçe Aktar' },
               ].map((sub) => (
                 <button
                   key={sub.id}
@@ -1479,7 +1479,7 @@ export default function AdminPortalPage() {
                         }}
                         className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1"
                       >
-                        Kartları İncele & Düzenle ➔
+                        Kartları İncele & Düzenle
                       </button>
                     </div>
                   </div>
@@ -1715,7 +1715,7 @@ export default function AdminPortalPage() {
                   className="text-xs py-3 font-black bg-gradient-to-r from-indigo-600 to-purple-600"
                 >
                   <UploadCloud className="w-4 h-4 mr-1.5" />
-                  {bulkImporting ? 'Yükleniyor...' : '⚡ Kartları Desteye Toplu Yükle'}
+                  {bulkImporting ? 'Yükleniyor...' : 'Kartları Desteye Toplu Yükle'}
                 </Button>
               </form>
             </div>
@@ -1762,7 +1762,7 @@ export default function AdminPortalPage() {
                         ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                         : 'bg-slate-800 text-slate-400 border-slate-700'
                     }`}>
-                      {trigger.conversionRate >= 30 ? 'Yüksek 🚀' : trigger.conversionRate >= 15 ? 'Normal' : 'Geliştir'}
+                      {trigger.conversionRate >= 30 ? 'Yüksek' : trigger.conversionRate >= 15 ? 'Normal' : 'Geliştir'}
                     </span>
                   </div>
                 </div>
@@ -1921,7 +1921,7 @@ export default function AdminPortalPage() {
                 className="flex-1 py-3.5 font-black text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 shadow-lg shadow-amber-500/25"
               >
                 <Save className="w-4 h-4 mr-2" />
-                {savingStrategy ? 'Canlıya Alınıyor...' : '💾 Stratejiyi Kaydet & Canlıya Al'}
+                {savingStrategy ? 'Canlıya Alınıyor...' : 'Stratejiyi Kaydet & Canlıya Al'}
               </Button>
 
               <Button
@@ -1963,7 +1963,7 @@ export default function AdminPortalPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <label className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
                 <div>
-                  <span className="text-xs font-black text-white block">📢 Reklam Gösterimi (Master Switch)</span>
+                  <span className="text-xs font-black text-white block">Reklam Gösterimi (Master Switch)</span>
                   <span className="text-[10px] text-slate-400">Tüm sistem genelinde reklamları aç / kapat</span>
                 </div>
                 <input
@@ -1976,7 +1976,7 @@ export default function AdminPortalPage() {
 
               <label className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between cursor-pointer">
                 <div>
-                  <span className="text-xs font-black text-white block">👑 Pro Üyelere Reklamsız Deneyim</span>
+                  <span className="text-xs font-black text-white block">Pro Üyelere Reklamsız Deneyim</span>
                   <span className="text-[10px] text-slate-400">Pro kullanıcılara hiçbir reklam gösterme</span>
                 </div>
                 <input
@@ -1991,7 +1991,7 @@ export default function AdminPortalPage() {
             {/* Frequency (Interval Turns) */}
             <div>
               <label className="text-xs font-bold text-slate-300 block mb-2">
-                🎯 Tur Sıklığı (Kaç turda bir reklam gösterilsin?):
+                Tur Sıklığı (Kaç turda bir reklam gösterilsin?):
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {[1, 2, 3, 5].map((num) => (
@@ -2014,7 +2014,7 @@ export default function AdminPortalPage() {
             {/* Skip Delay Countdown */}
             <div>
               <label className="text-xs font-bold text-slate-300 block mb-2">
-                ⏱️ Reklam Atlama Süresi (Geri sayım kaç saniye sürsün?):
+                Reklam Atlama Süresi (Geri sayım kaç saniye sürsün?):
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
@@ -2077,7 +2077,7 @@ export default function AdminPortalPage() {
                 className="flex-1 py-3.5 font-black text-sm bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:opacity-95 shadow-lg shadow-indigo-500/25"
               >
                 <Save className="w-4 h-4 mr-2" />
-                {savingAdConfig ? 'Kaydediliyor...' : '💾 Reklam Ayarlarını Kaydet & Canlıya Al'}
+                {savingAdConfig ? 'Kaydediliyor...' : 'Reklam Ayarlarını Kaydet & Canlıya Al'}
               </Button>
 
               <Button
@@ -2113,7 +2113,7 @@ export default function AdminPortalPage() {
                     description: 'Reklam açıklamasını buraya girin...',
                     badge: 'SPONSORLU',
                     image_url: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&auto=format&fit=crop&q=80',
-                    cta_text: 'Hemen İncele ➔',
+                    cta_text: 'Hemen İncele',
                     target_url: 'https://portegu.com',
                     placement: 'all',
                     color_theme: 'from-indigo-600 to-purple-800',
@@ -2422,7 +2422,7 @@ export default function AdminPortalPage() {
                   type="text"
                   value={newVersionTitle}
                   onChange={(e) => setNewVersionTitle(e.target.value)}
-                  placeholder="v1.2.0: AI & Kart Geliştirmeleri 🚀"
+                  placeholder="v1.2.0: AI & Kart Geliştirmeleri"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-bold text-white focus:outline-none"
                   required
                 />
@@ -2552,7 +2552,7 @@ export default function AdminPortalPage() {
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black text-slate-400 uppercase tracking-wider">
-                🎬 Canlı Akış Önizlemesi ({onboardingSteps.length} Adım Sıralı)
+                Canlı Akış Önizlemesi ({onboardingSteps.length} Adım Sıralı)
               </span>
               <span className="text-[10px] text-slate-500">
                 Adımları sağa/sola taşıyarak sırasını değiştirebilirsiniz
@@ -2615,22 +2615,22 @@ export default function AdminPortalPage() {
                     <div className="w-full rounded-xl bg-slate-900/90 border border-slate-800 p-2 text-[10px] text-slate-300">
                       {step.interactive_type === 'buzzer_tester' && (
                         <div className="flex items-center justify-center gap-1.5 text-rose-400 font-bold">
-                          <Volume2 className="w-3.5 h-3.5" /> 🚨 Dokunmatik Buzzer Testi
+                          <Volume2 className="w-3.5 h-3.5" /> Dokunmatik Buzzer Testi
                         </div>
                       )}
                       {step.interactive_type === 'rules_card' && (
                         <div className="flex items-center justify-center gap-1.5 text-amber-400 font-bold">
-                          <Flame className="w-3.5 h-3.5" /> 🃏 Yasaklı Kelime Örnek Kartı
+                          <Flame className="w-3.5 h-3.5" /> Yasaklı Kelime Örnek Kartı
                         </div>
                       )}
                       {step.interactive_type === 'ai_spark' && (
                         <div className="flex items-center justify-center gap-1.5 text-purple-400 font-bold">
-                          <Sparkles className="w-3.5 h-3.5" /> ✨ Gemini 3.5 AI Motoru
+                          <Sparkles className="w-3.5 h-3.5" /> Gemini 3.5 AI Motoru
                         </div>
                       )}
                       {step.interactive_type === 'user_profile' && (
                         <div className="flex items-center justify-center gap-1.5 text-emerald-400 font-bold">
-                          <Trophy className="w-3.5 h-3.5" /> 👤 Oyuncu Adı Girişi
+                          <Trophy className="w-3.5 h-3.5" /> Oyuncu Adı Girişi
                         </div>
                       )}
                     </div>
@@ -2899,7 +2899,7 @@ export default function AdminPortalPage() {
                     type="text"
                     value={editingOnboardingStep.badge}
                     onChange={(e) => setEditingOnboardingStep({ ...editingOnboardingStep, badge: e.target.value })}
-                    placeholder="✨ YENİ NESİL TABU"
+                    placeholder="YENİ NESİL TABU"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
                     required
                   />
@@ -2912,12 +2912,12 @@ export default function AdminPortalPage() {
                     onChange={(e) => setEditingOnboardingStep({ ...editingOnboardingStep, badge_color: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
                   >
-                    <option value="bg-amber-500/20 text-amber-300 border-amber-500/30">🟡 Amber (Sıcak/Öne Çıkan)</option>
-                    <option value="bg-rose-500/20 text-rose-300 border-rose-500/30">🔴 Rose (Buzzer/Heyecan)</option>
-                    <option value="bg-purple-500/20 text-purple-300 border-purple-500/30">🟣 Mor (AI/Trend)</option>
-                    <option value="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">🟢 Yeşil (Başarı/Profil)</option>
-                    <option value="bg-indigo-500/20 text-indigo-300 border-indigo-500/30">🔵 İndigo (Klasik)</option>
-                    <option value="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">🔷 Camgöbeği (Oyun)</option>
+                    <option value="bg-amber-500/20 text-amber-300 border-amber-500/30">Amber (Sıcak/Öne Çıkan)</option>
+                    <option value="bg-rose-500/20 text-rose-300 border-rose-500/30">Rose (Buzzer/Heyecan)</option>
+                    <option value="bg-purple-500/20 text-purple-300 border-purple-500/30">Mor (AI/Trend)</option>
+                    <option value="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">Yeşil (Başarı/Profil)</option>
+                    <option value="bg-indigo-500/20 text-indigo-300 border-indigo-500/30">İndigo (Klasik)</option>
+                    <option value="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">Camgöbeği (Oyun)</option>
                   </select>
                 </div>
               </div>
@@ -2954,13 +2954,13 @@ export default function AdminPortalPage() {
                     onChange={(e) => setEditingOnboardingStep({ ...editingOnboardingStep, icon: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
                   >
-                    <option value="Flame">🔥 Alev (Kıvılcım & Vibe)</option>
-                    <option value="Volume2">🚨 Hoparlör / Buzzer</option>
-                    <option value="Sparkles">✨ Parıltı / Gemini AI</option>
-                    <option value="Trophy">🏆 Kupa / Karakter & Profil</option>
-                    <option value="Smartphone">📱 Akıllı Telefon</option>
-                    <option value="Gamepad2">🎮 Oyun Kolu</option>
-                    <option value="Crown">👑 Taç / VIP</option>
+                    <option value="Flame">Alev (Kıvılcım & Vibe)</option>
+                    <option value="Volume2">Hoparlör / Buzzer</option>
+                    <option value="Sparkles">Parıltı / Gemini AI</option>
+                    <option value="Trophy">Kupa / Karakter & Profil</option>
+                    <option value="Smartphone">Akıllı Telefon</option>
+                    <option value="Gamepad2">Oyun Kolu</option>
+                    <option value="Crown">Taç / VIP</option>
                   </select>
                 </div>
 
@@ -2976,10 +2976,10 @@ export default function AdminPortalPage() {
                     }
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
                   >
-                    <option value="buzzer_tester">🚨 Canlı Dokunmatik Buzzer Testi</option>
-                    <option value="rules_card">🃏 Yasaklı Kelime Örnek Kartı</option>
-                    <option value="ai_spark">✨ Gemini 3.5 Yapay Zeka Çipi</option>
-                    <option value="user_profile">👤 Oyuncu Adı Giriş Kutusu</option>
+                    <option value="buzzer_tester">Canlı Dokunmatik Buzzer Testi</option>
+                    <option value="rules_card">Yasaklı Kelime Örnek Kartı</option>
+                    <option value="ai_spark">Gemini 3.5 Yapay Zeka Çipi</option>
+                    <option value="user_profile">Oyuncu Adı Giriş Kutusu</option>
                   </select>
                 </div>
               </div>
@@ -2997,7 +2997,7 @@ export default function AdminPortalPage() {
                       bullets: e.target.value.split('\n').filter((l) => l.trim().length > 0),
                     })
                   }
-                  placeholder="🟢 Yasaklı kelimeleri söylemeden anlat&#10;⚡ Doğru bildiğinde +1 Puan kazan"
+                  placeholder="Yasaklı kelimeleri söylemeden anlat&#10;Doğru bildiğinde +1 Puan kazan"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-purple-500 font-mono resize-none"
                 />
               </div>
@@ -3008,7 +3008,7 @@ export default function AdminPortalPage() {
                   type="text"
                   value={editingOnboardingStep.cta_text || 'Devam Et'}
                   onChange={(e) => setEditingOnboardingStep({ ...editingOnboardingStep, cta_text: e.target.value })}
-                  placeholder="Örn: Devam Et, Harika Dene!, ⚔️ Arenaya Başla!"
+                  placeholder="Örn: Devam Et, Harika Dene!, Arenaya Başla!"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
                 />
               </div>
@@ -3088,10 +3088,10 @@ export default function AdminPortalPage() {
                     onChange={(e) => setEditingAd({ ...editingAd, placement: e.target.value as any })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500"
                   >
-                    <option value="all">🌟 Tüm Konumlar (Her Yerde)</option>
-                    <option value="turn_break">⏱️ Tur Aralarında (Turn Break)</option>
-                    <option value="round_end">🏆 Tur Sonlarında (Round End)</option>
-                    <option value="match_end">🏁 Maç Sonunda (Match Summary)</option>
+                    <option value="all">Tüm Konumlar (Her Yerde)</option>
+                    <option value="turn_break">Tur Aralarında (Turn Break)</option>
+                    <option value="round_end">Tur Sonlarında (Round End)</option>
+                    <option value="match_end">Maç Sonunda (Match Summary)</option>
                   </select>
                 </div>
               </div>
@@ -3102,7 +3102,7 @@ export default function AdminPortalPage() {
                   type="text"
                   value={editingAd.title}
                   onChange={(e) => setEditingAd({ ...editingAd, title: e.target.value })}
-                  placeholder="Örn: ☕ Parti Molasında Kahve Keyfi"
+                  placeholder="Örn: Parti Molasında Kahve Keyfi"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-black text-white focus:outline-none focus:border-indigo-500"
                   required
                 />
@@ -3138,7 +3138,7 @@ export default function AdminPortalPage() {
                     type="text"
                     value={editingAd.cta_text}
                     onChange={(e) => setEditingAd({ ...editingAd, cta_text: e.target.value })}
-                    placeholder="Hemen İncele ➔"
+                    placeholder="Hemen İncele"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500"
                     required
                   />

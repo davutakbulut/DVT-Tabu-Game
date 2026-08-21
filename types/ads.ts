@@ -37,11 +37,11 @@ export const DEFAULT_AD_CONFIG: AdConfig = {
 export const DEFAULT_ADS: AdItem[] = [
   {
     id: 'ad-dvt-pro',
-    title: '👑 DVT Tabu Pro VIP',
+    title: 'DVT Tabu Pro VIP',
     description: 'Tüm reklamları kaldırın, sınırsız Gemini AI destesi üretin ve 6 kişilik takımlarla oynayın!',
     badge: 'ÖZEL FIRSAT',
     image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
-    cta_text: 'Hemen Pro\'ya Geç ➔',
+    cta_text: 'Hemen Pro\'ya Geç',
     target_url: '/paywall',
     placement: 'all',
     color_theme: 'from-amber-500 via-orange-600 to-rose-600',
@@ -52,7 +52,7 @@ export const DEFAULT_ADS: AdItem[] = [
   },
   {
     id: 'ad-coffee-break',
-    title: '☕ Parti Molasında Kahve Keyfi',
+    title: 'Parti Molasında Kahve Keyfi',
     description: 'Tabu kapışması kızışırken sıradaki tur için enerjini tazele!',
     badge: 'SPONSORLU',
     image_url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&auto=format&fit=crop&q=80',

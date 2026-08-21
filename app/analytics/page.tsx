@@ -304,7 +304,7 @@ export default function AnalyticsDashboardPage() {
               type="text"
               value={newVersionTitle}
               onChange={(e) => setNewVersionTitle(e.target.value)}
-              placeholder="v1.2.0: AI Özel Deste & Oda Geliştirmeleri 🚀"
+              placeholder="v1.2.0: AI Özel Deste & Oda Geliştirmeleri "
               className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs font-bold text-white focus:outline-none focus:border-indigo-500"
               required
             />

@@ -10,7 +10,7 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 // Curated high-quality fallbacks when Gemini is busy or rate-limited (429)
 const FALLBACK_DAILY = {
   date: new Date().toISOString().split('T')[0],
-  headline: 'Günün Tabu Arenası: Hızlı ve Zeki Olan Kazanır! 🚀',
+  headline: 'Günün Tabu Arenası: Hızlı ve Zeki Olan Kazanır! ',
   daily_vibe: 'Bugün Genel Kültür ve Sinema kategorilerinde rekor denemesi günü!',
   recommended_modes: [
     {
@@ -35,7 +35,7 @@ const FALLBACK_DAILY = {
 };
 
 const FALLBACK_ANALYSIS = {
-  match_headline: 'NEFES KESEN DERBİ: KELİME CANAVARLARI SAHNEDE! 🚀',
+  match_headline: 'NEFES KESEN DERBİ: KELİME CANAVARLARI SAHNEDE! ',
   commentary: 'Kusursuz takım iletişimi ve hızlı pas stratejisiyle hak edilmiş muhteşem bir şampiyonluk!',
   mvp_spotlight: 'Gecenin yıldızı anlatıcılar oldu, baskı altında harika kelimeler buldular.',
   key_takeaways: [
