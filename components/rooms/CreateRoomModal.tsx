@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { 
   X, 
@@ -10,18 +10,11 @@ import {
   Users, 
   Lock, 
   Unlock, 
-  Sparkles, 
   Clock, 
   RotateCcw, 
   Trophy, 
-  Layers, 
   Check, 
-  Dices,
-  ShieldCheck,
-  Zap,
   Globe,
-  Radio,
-  Flame,
   Gamepad2
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -197,11 +190,13 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
               </div>
               <div>
                 <h3 className="text-sm font-black text-white">Canlı Oyun Odası Kur</h3>
-                <span className="text-[10px] text-slate-400">Adım {step} / 4: {
-                  step === 1 ? 'Oda & Güvenlik' :
-                  step === 2 ? 'Oyun Kuralları' :
-                  step === 3 ? 'Deste Seçimi' : 'Takımlar & Lobi'
-                }</span>
+                <span className="text-[10px] text-slate-400">
+                  Adım {step} / 4: {
+                    step === 1 ? 'Oda & Güvenlik' :
+                    step === 2 ? 'Oyun Kuralları' :
+                    step === 3 ? 'Deste Seçimi' : 'Takımlar & Lobi'
+                  }
+                </span>
               </div>
             </div>
 
@@ -218,7 +213,9 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className={}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i <= step ? 'bg-indigo-500 shadow-sm shadow-indigo-500/50' : 'bg-slate-800'
+                }`}
               />
             ))}
           </div>
@@ -296,7 +293,11 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                       key={num}
                       type="button"
                       onClick={() => setMaxPlayers(num)}
-                      className={}
+                      className={`py-2 rounded-xl text-xs font-black border transition-all ${
+                        maxPlayers === num
+                          ? 'bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-500/20'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
                     >
                       {num}
                     </button>
@@ -320,7 +321,11 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                       key={sec}
                       type="button"
                       onClick={() => setTurnDuration(sec)}
-                      className={}
+                      className={`py-2.5 rounded-xl text-xs font-black border transition-all ${
+                        turnDuration === sec
+                          ? 'bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-500/20'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
                     >
                       {sec} sn
                     </button>
@@ -339,7 +344,11 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                       key={p}
                       type="button"
                       onClick={() => setPassLimit(p)}
-                      className={}
+                      className={`py-2 rounded-xl text-xs font-black border transition-all ${
+                        passLimit === p
+                          ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-md'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
                     >
                       {p === 99 ? 'Sınırsız' : p}
                     </button>
@@ -358,7 +367,11 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                       key={r}
                       type="button"
                       onClick={() => setTotalRounds(r)}
-                      className={}
+                      className={`py-2 rounded-xl text-xs font-black border transition-all ${
+                        totalRounds === r
+                          ? 'bg-purple-600 border-purple-400 text-white shadow-md'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
                     >
                       {r} Tur
                     </button>
@@ -391,7 +404,11 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                           isSelected ? prev.filter((id) => id !== d.id) : [...prev, d.id]
                         );
                       }}
-                      className={}
+                      className={`p-3 rounded-2xl border cursor-pointer flex items-center justify-between transition-all ${
+                        isSelected
+                          ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-md shadow-indigo-500/10'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div
@@ -404,7 +421,9 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                         </div>
                       </div>
 
-                      <div className={}>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${
+                        isSelected ? 'bg-indigo-600 border-indigo-400 text-white' : 'border-slate-700 bg-slate-900'
+                      }`}>
                         {isSelected && <Check className="w-3 h-3" />}
                       </div>
                     </div>
@@ -425,7 +444,11 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                       key={cnt}
                       type="button"
                       onClick={() => setTeamCount(cnt)}
-                      className={}
+                      className={`py-2.5 rounded-xl text-xs font-black border transition-all ${
+                        teamCount === cnt
+                          ? 'bg-indigo-600 border-indigo-400 text-white shadow-md'
+                          : 'bg-slate-950 border-slate-800 text-slate-400'
+                      }`}
                     >
                       {cnt} Takımlı Kapışma
                     </button>
