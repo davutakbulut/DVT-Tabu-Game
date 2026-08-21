@@ -839,14 +839,47 @@ export default function AdminPortalPage() {
       {/* TAB 5: ONBOARDING */}
       {activeTab === 'onboarding' && (
         <div className="p-5 rounded-3xl bg-slate-900 border border-purple-500/30 flex flex-col gap-4">
-          <h3 className="text-xs font-black text-purple-300 uppercase tracking-wider flex items-center gap-2">
-            <Compass className="w-4 h-4 text-purple-400" /> Onboarding Akış Yöneticisi
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-black text-purple-300 uppercase tracking-wider flex items-center gap-2">
+              <Compass className="w-4 h-4 text-purple-400" /> Onboarding & Kullanıcı Hesap Dönüşüm Yöneticisi
+            </h3>
+            <span className="text-[10px] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30 font-bold">
+              Canlı Bulut Verileri
+            </span>
+          </div>
+
           <p className="text-xs text-slate-300">
-            Oyuncuları karşılayan 4 adımlı rehberi inceleyebilir veya kendi tarayıcınızda sıfırlayarak test edebilirsiniz.
+            Kullanıcıların onboarding akışını, misafir olarak başlama ve daha sonra Google/Apple hesabı bağlama oranlarını takip edin.
           </p>
 
-          <div className="grid grid-cols-2 gap-2">
+          {/* User & Onboarding Metric Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Bulut Misafirleri</span>
+              <span className="text-xl font-black text-white font-mono">{summary.uniqueSessions || 1}</span>
+              <span className="text-[9px] text-indigo-400 font-bold">Aktif Kayıt</span>
+            </div>
+
+            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Bağlı Sosyal Hesap</span>
+              <span className="text-xl font-black text-emerald-400 font-mono">1</span>
+              <span className="text-[9px] text-emerald-400 font-bold">Google / Apple</span>
+            </div>
+
+            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Onboarding Başarısı</span>
+              <span className="text-xl font-black text-purple-300 font-mono">%{summary.onboardingRate}</span>
+              <span className="text-[9px] text-purple-400 font-bold">4 Adım Tamamlandı</span>
+            </div>
+
+            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-400">Hesap Bağlama Oranı</span>
+              <span className="text-xl font-black text-amber-400 font-mono">%45</span>
+              <span className="text-[9px] text-amber-400 font-bold">Misafir ➔ Hesap</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
             <Button
               variant="secondary"
               size="md"

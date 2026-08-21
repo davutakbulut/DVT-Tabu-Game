@@ -45,7 +45,8 @@ export default function HomePage() {
     hasCompletedOnboarding, 
     isProUser, 
     userAvatar, 
-    isLoggedIn 
+    isLoggedIn,
+    initializeUser 
   } = useUserStore();
 
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
@@ -59,6 +60,7 @@ export default function HomePage() {
 
   useEffect(() => {
     analytics.pageView('/');
+    initializeUser();
     if (!hasCompletedOnboarding) {
       setIsOnboardingOpen(true);
     }

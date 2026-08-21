@@ -16,8 +16,9 @@ interface UserStoreState {
   provider: 'guest' | 'google' | 'apple';
   isLoggedIn: boolean;
   isProUser: boolean;
+  isHydrated: boolean;
 
-  // Preferences
+  // Preferences (synced to Supabase)
   soundEnabled: boolean;
   vibrationEnabled: boolean;
   theme: 'dark' | 'light';
@@ -26,11 +27,12 @@ interface UserStoreState {
   passLimit: number;
   favoriteCategories: string[];
 
-  // Career Stats
+  // Career Stats (synced to Supabase)
   stats: UserStats;
   totalGamesPlayed: number;
 
   // Actions
+  initializeUser: () => Promise<void>;
   setGuestName: (name: string) => void;
   toggleSound: () => void;
   toggleVibration: () => void;
@@ -41,15 +43,19 @@ interface UserStoreState {
   updateSettings: (settings: Partial<{ turnDuration: number; passLimit: number; favoriteCategories: string[] }>) => void;
   recordGameResult: (correct: number, taboos: number, passes: number, won: boolean) => void;
   loginWithSocial: (provider: 'google' | 'apple', email: string, name: string, avatarUrl?: string) => Promise<void>;
-  logoutUser: () => void;
+  logoutUser: () => Promise<void>;
   syncWithCloud: () => Promise<void>;
 }
+
+const generateGuestId = (): string => {
+  return 'gst_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+};
 
 const getOrCreateUserId = (): string => {
   if (typeof window === 'undefined') return 'server_user';
   let id = localStorage.getItem('dvt_user_id');
   if (!id) {
-    id = 'usr_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+    id = generateGuestId();
     localStorage.setItem('dvt_user_id', id);
   }
   return id;
@@ -86,6 +92,7 @@ export const useUserStore = create<UserStoreState>((set, get) => {
     provider: savedProvider,
     isLoggedIn: savedProvider !== 'guest',
     isProUser: savedIsPro,
+    isHydrated: false,
 
     soundEnabled: true,
     vibrationEnabled: true,
@@ -97,6 +104,58 @@ export const useUserStore = create<UserStoreState>((set, get) => {
 
     stats: initialStats,
     totalGamesPlayed: savedGamesCount,
+
+    initializeUser: async () => {
+      const state = get();
+      if (typeof window === 'undefined') return;
+
+      try {
+        // 1. Fetch live cloud profile & settings from Supabase
+        const res = await fetch(`/api/user/profile?userId=${state.userId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.profile) {
+            set({
+              guestName: data.profile.display_name || state.guestName,
+              userEmail: data.profile.email || state.userEmail,
+              userAvatar: data.profile.avatar_url || state.userAvatar,
+              provider: data.profile.provider || state.provider,
+              isLoggedIn: data.profile.provider !== 'guest',
+              isProUser: Boolean(data.profile.is_pro),
+            });
+          }
+          if (data.settings) {
+            set({
+              turnDuration: data.settings.turn_duration || state.turnDuration,
+              passLimit: data.settings.pass_limit ?? state.passLimit,
+              soundEnabled: data.settings.sound_enabled ?? state.soundEnabled,
+              vibrationEnabled: data.settings.haptic_enabled ?? state.vibrationEnabled,
+              favoriteCategories: data.settings.favorite_categories || state.favoriteCategories,
+            });
+          }
+          if (data.stats) {
+            const cloudStats: UserStats = {
+              totalGamesPlayed: data.stats.total_games_played || 0,
+              totalWins: data.stats.total_wins || 0,
+              totalCorrectWords: data.stats.total_correct_words || 0,
+              totalTaboosHit: data.stats.total_taboos_hit || 0,
+              totalPassesUsed: data.stats.total_passes_used || 0,
+            };
+            set({
+              stats: cloudStats,
+              totalGamesPlayed: cloudStats.totalGamesPlayed,
+            });
+          }
+        } else {
+          // If not in Supabase yet, create the guest in cloud immediately
+          await state.syncWithCloud();
+        }
+      } catch {
+        // Fallback to local
+      } finally {
+        set({ isHydrated: true });
+      }
+    },
 
     setGuestName: (name) => {
       if (typeof window !== 'undefined') localStorage.setItem('dvt_display_name', name);
@@ -166,36 +225,89 @@ export const useUserStore = create<UserStoreState>((set, get) => {
     },
 
     loginWithSocial: async (provider, email, name, avatarUrl) => {
+      const state = get();
+
+      try {
+        // Upgrade existing guest profile in Supabase to keep all stats and settings
+        const res = await fetch('/api/user/upgrade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            guestId: state.userId,
+            provider,
+            email,
+            displayName: name,
+            avatarUrl,
+          }),
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.profile) {
+            set({
+              provider: json.profile.provider,
+              isLoggedIn: true,
+              userEmail: json.profile.email,
+              guestName: json.profile.display_name,
+              userAvatar: json.profile.avatar_url,
+            });
+          }
+        }
+      } catch {
+        // Fallback local update
+        set({
+          provider,
+          isLoggedIn: true,
+          userEmail: email,
+          guestName: name,
+          userAvatar: avatarUrl || null,
+        });
+      }
+
       if (typeof window !== 'undefined') {
         localStorage.setItem('dvt_user_email', email);
         localStorage.setItem('dvt_user_provider', provider);
         localStorage.setItem('dvt_display_name', name);
         if (avatarUrl) localStorage.setItem('dvt_user_avatar', avatarUrl);
       }
-
-      set({
-        provider,
-        isLoggedIn: true,
-        userEmail: email,
-        guestName: name,
-        userAvatar: avatarUrl || null,
-      });
-
-      await get().syncWithCloud();
     },
 
-    logoutUser: () => {
+    logoutUser: async () => {
+      const newGuestId = generateGuestId();
       if (typeof window !== 'undefined') {
+        localStorage.setItem('dvt_user_id', newGuestId);
         localStorage.removeItem('dvt_user_email');
         localStorage.removeItem('dvt_user_avatar');
         localStorage.setItem('dvt_user_provider', 'guest');
+        localStorage.setItem('dvt_display_name', 'Misafir Tabucu');
+        localStorage.setItem('dvt_total_games_played', '0');
+        localStorage.setItem('dvt_total_wins', '0');
+        localStorage.setItem('dvt_total_correct', '0');
+        localStorage.setItem('dvt_total_taboos', '0');
+        localStorage.setItem('dvt_total_passes', '0');
       }
+
+      const freshStats: UserStats = {
+        totalGamesPlayed: 0,
+        totalWins: 0,
+        totalCorrectWords: 0,
+        totalTaboosHit: 0,
+        totalPassesUsed: 0,
+      };
+
       set({
+        userId: newGuestId,
         provider: 'guest',
         isLoggedIn: false,
         userEmail: null,
         userAvatar: null,
+        guestName: 'Misafir Tabucu',
+        stats: freshStats,
+        totalGamesPlayed: 0,
       });
+
+      // Create new fresh guest record in Supabase
+      await get().syncWithCloud();
     },
 
     syncWithCloud: async () => {
