@@ -62,7 +62,8 @@ export default function HomePage() {
     toggleSound, 
     hasCompletedOnboarding, 
     isProUser, 
-    userAvatar, 
+    userAvatar,
+    userEmail, 
     isLoggedIn,
     initializeUser 
   } = useUserStore();
