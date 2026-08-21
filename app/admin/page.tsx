@@ -30,6 +30,7 @@ import {
   Plus, 
   LogOut, 
   ArrowLeft,
+  ArrowRight,
   Save,
   Clock,
   Zap,
@@ -56,9 +57,11 @@ import {
   ChevronUp,
   Terminal,
   Server,
-  Monitor
+  Monitor,
+  Volume2
 } from 'lucide-react';
 import { sendLog } from '@/lib/logger';
+import { DEFAULT_ONBOARDING_STEPS, OnboardingStepItem } from '@/types/onboarding';
 
 export default function AdminPortalPage() {
   const router = useRouter();
@@ -152,6 +155,12 @@ export default function AdminPortalPage() {
   const [isTestPaywallOpen, setIsTestPaywallOpen] = useState(false);
   const [testUpdateModal, setTestUpdateModal] = useState<any | null>(null);
   const [isTestOnboardingOpen, setIsTestOnboardingOpen] = useState(false);
+
+  // Onboarding Studio Flow State
+  const [onboardingSteps, setOnboardingSteps] = useState<OnboardingStepItem[]>(DEFAULT_ONBOARDING_STEPS);
+  const [editingOnboardingStep, setEditingOnboardingStep] = useState<OnboardingStepItem | null>(null);
+  const [savingOnboarding, setSavingOnboarding] = useState(false);
+  const [onboardingSavedSuccess, setOnboardingSavedSuccess] = useState(false);
 
   const fetchMetrics = () => {
     setLoadingMetrics(true);
@@ -264,6 +273,75 @@ export default function AdminPortalPage() {
     }
   };
 
+  const fetchOnboardingSteps = () => {
+    fetch('/api/config/onboarding')
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.steps && res.steps.length > 0) setOnboardingSteps(res.steps);
+      })
+      .catch(() => {});
+  };
+
+  const handleSaveOnboardingFlow = async () => {
+    setSavingOnboarding(true);
+    try {
+      const res = await fetch('/api/config/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ steps: onboardingSteps }),
+      });
+      if (res.ok) {
+        setOnboardingSavedSuccess(true);
+        setTimeout(() => setOnboardingSavedSuccess(false), 3000);
+      }
+    } catch {
+      alert('Onboarding akışı kaydedilemedi.');
+    } finally {
+      setSavingOnboarding(false);
+    }
+  };
+
+  const handleMoveOnboardingStep = (index: number, direction: 'left' | 'right') => {
+    const targetIndex = direction === 'left' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= onboardingSteps.length) return;
+    const newSteps = [...onboardingSteps];
+    const temp = newSteps[index];
+    newSteps[index] = newSteps[targetIndex];
+    newSteps[targetIndex] = temp;
+    setOnboardingSteps(newSteps);
+  };
+
+  const handleDeleteOnboardingStep = (id: string) => {
+    if (onboardingSteps.length <= 1) {
+      alert('En az 1 adet onboarding adımı bulunmalıdır!');
+      return;
+    }
+    setOnboardingSteps(onboardingSteps.filter((s) => s.id !== id));
+  };
+
+  const handleAddNewOnboardingStep = () => {
+    const newId = `step_${Date.now()}`;
+    const newStep: OnboardingStepItem = {
+      id: newId,
+      icon: 'Gamepad2',
+      badge: '✨ YENİ DENEYİM',
+      badge_color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+      title: 'Özel Deneyim Adımı',
+      desc: 'Bu adımda oyunculara sunmak istediğiniz yeni özelliği veya eğlenceli kuralı açıklayın.',
+      interactive_type: 'rules_card',
+      bullets: ['🔥 Yeni kural açıklaması', '⚡ Anında kapışma hissi'],
+      cta_text: 'Devam Et',
+    };
+    setOnboardingSteps([...onboardingSteps, newStep]);
+    setEditingOnboardingStep(newStep);
+  };
+
+  const handleResetDefaultOnboarding = () => {
+    if (confirm('Onboarding akışını varsayılan 4 adımlı interaktif deneyime sıfırlamak istiyor musunuz?')) {
+      setOnboardingSteps(DEFAULT_ONBOARDING_STEPS);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchMetrics();
@@ -272,6 +350,7 @@ export default function AdminPortalPage() {
       fetchCards();
       fetchLogs();
       fetchLogsStats();
+      fetchOnboardingSteps();
     }
   }, [isAuthenticated]);
 
@@ -1726,69 +1805,215 @@ export default function AdminPortalPage() {
         </div>
       )}
 
-      {/* TAB: ONBOARDING */}
+      {/* TAB: ONBOARDING & EXPERIENCE STUDIO */}
       {activeTab === 'onboarding' && (
-        <div className="p-5 rounded-3xl bg-slate-900 border border-purple-500/30 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-black text-purple-300 uppercase tracking-wider flex items-center gap-2">
-              <Compass className="w-4 h-4 text-purple-400" /> Onboarding & Kullanıcı Hesap Dönüşüm Yöneticisi
-            </h3>
-            <span className="text-[10px] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30 font-bold">
-              Canlı Bulut Verileri
-            </span>
+        <div className="flex flex-col gap-5">
+          {/* Top Info & Summary Card */}
+          <div className="p-5 rounded-3xl bg-slate-900 border border-purple-500/30 flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-black text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                  <Compass className="w-4 h-4 text-purple-400" /> Görsel Onboarding & Deneyim Stüdyosu
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Kullanıcılara sıradan bir oyun yerine duyusal ve interaktif bir deneyim yaşatın. Adımları yan yana inceleyin, sıralayın ve canlıya alın.
+                </p>
+              </div>
+
+              {onboardingSavedSuccess && (
+                <div className="p-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black flex items-center gap-1.5 animate-pulse shrink-0">
+                  <Check className="w-4 h-4" /> Akış Canlıya Alındı!
+                </div>
+              )}
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
+                <span className="text-[10px] text-slate-400">Toplam Başlama</span>
+                <span className="text-lg font-black text-white font-mono">{summary.onboardingStarts || 1}</span>
+              </div>
+              <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
+                <span className="text-[10px] text-slate-400">Tamamlama Oranı</span>
+                <span className="text-lg font-black text-purple-300 font-mono">%{summary.onboardingRate || 100}</span>
+              </div>
+              <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
+                <span className="text-[10px] text-slate-400">Aktif Adım Sayısı</span>
+                <span className="text-lg font-black text-cyan-300 font-mono">{onboardingSteps.length} Adım</span>
+              </div>
+              <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
+                <span className="text-[10px] text-slate-400">Deneyim Türü</span>
+                <span className="text-lg font-black text-amber-300 font-mono">İnteraktif</span>
+              </div>
+            </div>
+
+            {/* Action Toolbar */}
+            <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-slate-800">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleAddNewOnboardingStep}
+                  className="text-xs py-2 px-3.5 bg-indigo-600 hover:bg-indigo-500 font-bold"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Yeni Adım Ekle
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetDefaultOnboarding}
+                  className="text-xs py-2 px-3 border-slate-800 hover:bg-slate-800 text-slate-400"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1" /> Sıfırla
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsTestOnboardingOpen(true)}
+                  className="text-xs py-2 px-3 font-bold border-purple-500/30 text-purple-200 hover:bg-purple-500/10"
+                >
+                  <Compass className="w-3.5 h-3.5 mr-1 text-purple-400" /> Modal Olarak Test Et
+                </Button>
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSaveOnboardingFlow}
+                  disabled={savingOnboarding}
+                  className="text-xs py-2 px-4 font-black bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-95 shadow-md shadow-emerald-500/20"
+                >
+                  <Save className="w-3.5 h-3.5 mr-1" />
+                  {savingOnboarding ? 'Kaydediliyor...' : 'Tüm Akışı Kaydet & Canlıya Al'}
+                </Button>
+              </div>
+            </div>
           </div>
 
-          <p className="text-xs text-slate-300">
-            Kullanıcıların onboarding akışını, misafir olarak başlama ve daha sonra Google/Apple hesabı bağlama oranlarını takip edin.
-          </p>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-400">Bulut Misafirleri</span>
-              <span className="text-xl font-black text-white font-mono">{summary.uniqueSessions || 1}</span>
-              <span className="text-[9px] text-indigo-400 font-bold">Aktif Kayıt</span>
+          {/* VISUAL STORYBOARD / TIMELINE (YAN YANA TELEFON ÇERÇEVELERİ) */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                🎬 Canlı Akış Önizlemesi ({onboardingSteps.length} Adım Sıralı)
+              </span>
+              <span className="text-[10px] text-slate-500">
+                Adımları sağa/sola taşıyarak sırasını değiştirebilirsiniz
+              </span>
             </div>
 
-            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-400">Bağlı Sosyal Hesap</span>
-              <span className="text-xl font-black text-emerald-400 font-mono">1</span>
-              <span className="text-[9px] text-emerald-400 font-bold">Google / Apple / FB</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+              {onboardingSteps.map((step, index) => (
+                <div
+                  key={step.id || index}
+                  className="rounded-3xl bg-slate-950 border border-slate-800/90 hover:border-purple-500/50 transition-all p-4 flex flex-col justify-between gap-3 shadow-xl relative group overflow-hidden"
+                >
+                  {/* Top Step Pill & Reorder Bar */}
+                  <div className="flex items-center justify-between border-b border-slate-900 pb-2">
+                    <span className="text-[10px] font-black font-mono text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
+                      Adım #{index + 1}
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleMoveOnboardingStep(index, 'left')}
+                        disabled={index === 0}
+                        className="p-1 rounded-lg text-slate-500 hover:text-white disabled:opacity-20 disabled:hover:text-slate-500"
+                        title="Sola Taşı"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleMoveOnboardingStep(index, 'right')}
+                        disabled={index === onboardingSteps.length - 1}
+                        className="p-1 rounded-lg text-slate-500 hover:text-white disabled:opacity-20 disabled:hover:text-slate-500"
+                        title="Sağa Taşı"
+                      >
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Smartphone Frame Inner Content */}
+                  <div className="flex flex-col items-center text-center gap-2.5 py-1">
+                    <span className={`text-[9px] font-extrabold px-2.5 py-0.5 rounded-full border shadow-sm ${step.badge_color || 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'}`}>
+                      {step.badge}
+                    </span>
+
+                    <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center shadow-inner">
+                      {renderDeckIcon(step.icon, 'w-6 h-6')}
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs font-black text-white leading-tight">
+                        {step.title}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 line-clamp-2 mt-0.5 leading-snug">
+                        {step.desc}
+                      </p>
+                    </div>
+
+                    {/* Interactive Widget Mini Representation */}
+                    <div className="w-full rounded-xl bg-slate-900/90 border border-slate-800 p-2 text-[10px] text-slate-300">
+                      {step.interactive_type === 'buzzer_tester' && (
+                        <div className="flex items-center justify-center gap-1.5 text-rose-400 font-bold">
+                          <Volume2 className="w-3.5 h-3.5" /> 🚨 Dokunmatik Buzzer Testi
+                        </div>
+                      )}
+                      {step.interactive_type === 'rules_card' && (
+                        <div className="flex items-center justify-center gap-1.5 text-amber-400 font-bold">
+                          <Flame className="w-3.5 h-3.5" /> 🃏 Yasaklı Kelime Örnek Kartı
+                        </div>
+                      )}
+                      {step.interactive_type === 'ai_spark' && (
+                        <div className="flex items-center justify-center gap-1.5 text-purple-400 font-bold">
+                          <Sparkles className="w-3.5 h-3.5" /> ✨ Gemini 3.5 AI Motoru
+                        </div>
+                      )}
+                      {step.interactive_type === 'user_profile' && (
+                        <div className="flex items-center justify-center gap-1.5 text-emerald-400 font-bold">
+                          <Trophy className="w-3.5 h-3.5" /> 👤 Oyuncu Adı Girişi
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bullets preview */}
+                    {step.bullets && step.bullets.length > 0 && (
+                      <div className="w-full bg-slate-900/50 rounded-xl p-2 text-left flex flex-col gap-1 text-[9px] text-slate-400">
+                        {step.bullets.slice(0, 2).map((b, bIdx) => (
+                          <div key={bIdx} className="truncate flex items-center gap-1">
+                            <span className="text-indigo-400 font-bold">•</span> {b}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom Action Controls */}
+                  <div className="pt-2 border-t border-slate-900 flex items-center justify-between gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingOnboardingStep(step)}
+                      className="text-[10px] py-1 px-2.5 flex-1 bg-slate-900 border-slate-800 hover:bg-slate-800 text-indigo-300 font-bold"
+                    >
+                      <Edit3 className="w-3 h-3 mr-1" /> Düzenle
+                    </Button>
+
+                    <button
+                      onClick={() => handleDeleteOnboardingStep(step.id)}
+                      className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg transition-colors"
+                      title="Adımı Sil"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-
-            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-400">Onboarding Başarısı</span>
-              <span className="text-xl font-black text-purple-300 font-mono">%{summary.onboardingRate}</span>
-              <span className="text-[9px] text-purple-400 font-bold">4 Adım Tamamlandı</span>
-            </div>
-
-            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-400">Hesap Bağlama Oranı</span>
-              <span className="text-xl font-black text-amber-400 font-mono">%45</span>
-              <span className="text-[9px] text-amber-400 font-bold">Misafir ➔ Hesap</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={() => setIsTestOnboardingOpen(true)}
-              className="text-xs py-3 font-bold"
-            >
-              <Compass className="w-4 h-4 mr-1.5 text-purple-400" /> Onboarding'i Önizle
-            </Button>
-
-            <Button
-              variant="outline"
-              size="md"
-              onClick={() => {
-                setOnboardingCompleted(false);
-                alert('Onboarding durumunuz sıfırlandı! Ana sayfaya gittiğinizde rehber tekrar otomatik açılacaktır.');
-              }}
-              className="text-xs py-3 font-bold border-purple-500/30 text-purple-300"
-            >
-              <RotateCcw className="w-4 h-4 mr-1.5" /> Onboarding'i Sıfırla (Test Et)
-            </Button>
           </div>
         </div>
       )}
@@ -1979,6 +2204,180 @@ export default function AdminPortalPage() {
                 </Button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Onboarding Step Modal */}
+      {editingOnboardingStep && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-purple-500/40 p-6 flex flex-col gap-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-white">Deneyim Adımını Düzenle</h4>
+                  <span className="text-[10px] text-slate-400">Adım ID: {editingOnboardingStep.id}</span>
+                </div>
+              </div>
+              <button onClick={() => setEditingOnboardingStep(null)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setOnboardingSteps((prev) =>
+                  prev.map((s) => (s.id === editingOnboardingStep.id ? editingOnboardingStep : s))
+                );
+                setEditingOnboardingStep(null);
+              }}
+              className="flex flex-col gap-3.5"
+            >
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">Rozet Metni (Badge):</label>
+                  <input
+                    type="text"
+                    value={editingOnboardingStep.badge}
+                    onChange={(e) => setEditingOnboardingStep({ ...editingOnboardingStep, badge: e.target.value })}
+                    placeholder="✨ YENİ NESİL TABU"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">Rozet Renk Teması:</label>
+                  <select
+                    value={editingOnboardingStep.badge_color || 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'}
+                    onChange={(e) => setEditingOnboardingStep({ ...editingOnboardingStep, badge_color: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="bg-amber-500/20 text-amber-300 border-amber-500/30">🟡 Amber (Sıcak/Öne Çıkan)</option>
+                    <option value="bg-rose-500/20 text-rose-300 border-rose-500/30">🔴 Rose (Buzzer/Heyecan)</option>
+                    <option value="bg-purple-500/20 text-purple-300 border-purple-500/30">🟣 Mor (AI/Trend)</option>
+                    <option value="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">🟢 Yeşil (Başarı/Profil)</option>
+                    <option value="bg-indigo-500/20 text-indigo-300 border-indigo-500/30">🔵 İndigo (Klasik)</option>
+                    <option value="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">🔷 Camgöbeği (Oyun)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Adım Ana Başlığı:</label>
+                <input
+                  type="text"
+                  value={editingOnboardingStep.title}
+                  onChange={(e) => setEditingOnboardingStep({ ...editingOnboardingStep, title: e.target.value })}
+                  placeholder="Örn: Sıradan Oyunları Unut!"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-black text-white focus:outline-none focus:border-purple-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Açıklama / Deneyim Mesajı:</label>
+                <textarea
+                  rows={2}
+                  value={editingOnboardingStep.desc}
+                  onChange={(e) => setEditingOnboardingStep({ ...editingOnboardingStep, desc: e.target.value })}
+                  placeholder="Kullanıcıya bu adımda hissettirmek istediğiniz mesaj..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-purple-500 resize-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">İkon Seçimi:</label>
+                  <select
+                    value={editingOnboardingStep.icon}
+                    onChange={(e) => setEditingOnboardingStep({ ...editingOnboardingStep, icon: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="Flame">🔥 Alev (Kıvılcım & Vibe)</option>
+                    <option value="Volume2">🚨 Hoparlör / Buzzer</option>
+                    <option value="Sparkles">✨ Parıltı / Gemini AI</option>
+                    <option value="Trophy">🏆 Kupa / Karakter & Profil</option>
+                    <option value="Smartphone">📱 Akıllı Telefon</option>
+                    <option value="Gamepad2">🎮 Oyun Kolu</option>
+                    <option value="Crown">👑 Taç / VIP</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">İnteraktif Deneyim Türü:</label>
+                  <select
+                    value={editingOnboardingStep.interactive_type}
+                    onChange={(e) =>
+                      setEditingOnboardingStep({
+                        ...editingOnboardingStep,
+                        interactive_type: e.target.value as any,
+                      })
+                    }
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="buzzer_tester">🚨 Canlı Dokunmatik Buzzer Testi</option>
+                    <option value="rules_card">🃏 Yasaklı Kelime Örnek Kartı</option>
+                    <option value="ai_spark">✨ Gemini 3.5 Yapay Zeka Çipi</option>
+                    <option value="user_profile">👤 Oyuncu Adı Giriş Kutusu</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">
+                  Öne Çıkan Maddeler (Her satıra 1 madde):
+                </label>
+                <textarea
+                  rows={3}
+                  value={(editingOnboardingStep.bullets || []).join('\n')}
+                  onChange={(e) =>
+                    setEditingOnboardingStep({
+                      ...editingOnboardingStep,
+                      bullets: e.target.value.split('\n').filter((l) => l.trim().length > 0),
+                    })
+                  }
+                  placeholder="🟢 Yasaklı kelimeleri söylemeden anlat&#10;⚡ Doğru bildiğinde +1 Puan kazan"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-purple-500 font-mono resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Buton Metni (CTA):</label>
+                <input
+                  type="text"
+                  value={editingOnboardingStep.cta_text || 'Devam Et'}
+                  onChange={(e) => setEditingOnboardingStep({ ...editingOnboardingStep, cta_text: e.target.value })}
+                  placeholder="Örn: Devam Et, Harika Dene!, ⚔️ Arenaya Başla!"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <Button
+                  variant="outline"
+                  size="md"
+                  type="button"
+                  onClick={() => setEditingOnboardingStep(null)}
+                  className="text-xs"
+                >
+                  İptal
+                </Button>
+                <Button
+                  variant="primary"
+                  size="md"
+                  type="submit"
+                  className="text-xs font-black bg-purple-600 hover:bg-purple-500"
+                >
+                  <Check className="w-3.5 h-3.5 mr-1" /> Değişiklikleri Uygula
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}
