@@ -47,6 +47,9 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     current_card: null,
     time_remaining: DEFAULT_GAME_SETTINGS.turn_duration,
     remaining_passes: DEFAULT_GAME_SETTINGS.pass_limit,
+    turn_correct_count: 0,
+    turn_pass_count: 0,
+    turn_tabu_count: 0,
     buzzer_locked_by: null,
     cards_used_ids: [],
     turn_history: [],
@@ -80,6 +83,9 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         current_card: firstCard,
         time_remaining: settings.turn_duration,
         remaining_passes: settings.pass_limit,
+        turn_correct_count: 0,
+        turn_pass_count: 0,
+        turn_tabu_count: 0,
         buzzer_locked_by: null,
         cards_used_ids: [firstCard.id],
         turn_history: [],
@@ -98,6 +104,9 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         current_card: nextCard,
         time_remaining: settings.turn_duration,
         remaining_passes: settings.pass_limit,
+        turn_correct_count: 0,
+        turn_pass_count: 0,
+        turn_tabu_count: 0,
         buzzer_locked_by: null,
         cards_used_ids: [...state.gameState.cards_used_ids, nextCard.id],
       }
@@ -130,6 +139,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       teams: updatedTeams,
       gameState: {
         ...gameState,
+        turn_correct_count: gameState.turn_correct_count + 1,
         current_card: nextCard,
         cards_used_ids: [...gameState.cards_used_ids, nextCard.id],
         turn_history: [...gameState.turn_history, turnItem],
@@ -158,6 +168,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       gameState: {
         ...gameState,
         remaining_passes: gameState.remaining_passes - 1,
+        turn_pass_count: gameState.turn_pass_count + 1,
         current_card: nextCard,
         cards_used_ids: [...gameState.cards_used_ids, nextCard.id],
         turn_history: [...gameState.turn_history, turnItem],
@@ -166,7 +177,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   },
 
   recordBuzzer: (rivalPlayerName, rivalTeamId) => {
-    const { gameState, teams, settings } = get();
+    const { gameState, teams, cardPool, settings } = get();
     if (gameState.status !== 'in_progress') return;
 
     soundManager.playBuzzer();
@@ -187,16 +198,15 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       points: penalty,
     };
 
+    const nextCard = getNextCard(cardPool, gameState.cards_used_ids);
+
     set({
       teams: updatedTeams,
       gameState: {
         ...gameState,
-        status: 'turn_break',
-        buzzer_locked_by: rivalPlayerName ? {
-          player_id: 'rival',
-          player_name: rivalPlayerName,
-          team_id: rivalTeamId || 'rival-team'
-        } : null,
+        turn_tabu_count: gameState.turn_tabu_count + 1,
+        current_card: nextCard,
+        cards_used_ids: [...gameState.cards_used_ids, nextCard.id],
         turn_history: [...gameState.turn_history, turnItem],
       }
     });
@@ -221,6 +231,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       gameState: {
         ...gameState,
         status: 'turn_break',
+        buzzer_locked_by: null,
         turn_history: [...gameState.turn_history, turnItem],
       }
     });
@@ -257,6 +268,9 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
           active_team_id: teams[nextIndex].id,
           time_remaining: settings.turn_duration,
           remaining_passes: settings.pass_limit,
+          turn_correct_count: 0,
+          turn_pass_count: 0,
+          turn_tabu_count: 0,
           buzzer_locked_by: null,
         }
       });
@@ -272,6 +286,9 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         active_team_id: teams[nextIndex].id,
         time_remaining: settings.turn_duration,
         remaining_passes: settings.pass_limit,
+        turn_correct_count: 0,
+        turn_pass_count: 0,
+        turn_tabu_count: 0,
         buzzer_locked_by: null,
       }
     });

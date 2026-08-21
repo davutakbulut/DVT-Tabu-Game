@@ -89,6 +89,9 @@ export interface ActiveGameState {
   current_card: Card | null;
   time_remaining: number;
   remaining_passes: number;
+  turn_correct_count: number;
+  turn_pass_count: number;
+  turn_tabu_count: number;
   buzzer_locked_by?: {
     player_id: string;
     player_name: string;

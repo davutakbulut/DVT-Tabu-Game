@@ -10,7 +10,7 @@ import { GameControls } from '@/components/game/GameControls';
 import { ScoreBoard } from '@/components/game/ScoreBoard';
 import { Timer } from '@/components/game/Timer';
 import { Button } from '@/components/ui/Button';
-import { Play, Pause, RotateCcw, AlertTriangle, ArrowRight, Trophy } from 'lucide-react';
+import { Play, Pause, RotateCcw, AlertTriangle, ArrowRight, Trophy, CheckCircle2, FastForward, AlertOctagon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PlayPage() {
@@ -146,36 +146,44 @@ export default function PlayPage() {
           </div>
         )}
 
-        {/* State C: Turn Break / Buzzer / Timeout Screen */}
+        {/* State C: Turn Break / Timeout Screen */}
         {gameState.status === 'turn_break' && (
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="w-full max-w-sm rounded-3xl bg-slate-900 border border-slate-800 p-6 text-center flex flex-col items-center gap-4 shadow-2xl"
           >
-            {gameState.buzzer_locked_by ? (
-              <div className="p-3 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse">
-                <AlertTriangle className="w-10 h-10" />
-              </div>
-            ) : (
-              <div className="p-3 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40">
-                <Trophy className="w-10 h-10" />
-              </div>
-            )}
+            <div className="p-3 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40">
+              <Trophy className="w-10 h-10" />
+            </div>
 
             <div>
               <h3 className="text-xl font-black text-white">
-                {gameState.buzzer_locked_by ? 'TABU / YASAKLI KELİME!' : 'Süre Doldu! ⏱️'}
+                Süre Doldu! ⏱️
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                {gameState.buzzer_locked_by
-                  ? `${activeTeam?.name} takımı yasaklı kelime cezası aldı (${settings.buzzer_penalty} Puan).`
-                  : `${activeTeam?.name} turunu tamamladı.`}
+                {activeTeam?.name} bu turdaki süresini tamamladı.
               </p>
             </div>
 
-            <div className="w-full py-3 px-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex justify-between text-sm font-bold">
-              <span className="text-slate-400">Mevcut Skor:</span>
+            {/* Tur Özeti Sayaçları */}
+            <div className="w-full grid grid-cols-3 gap-2 py-3 px-2 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs">
+              <div className="flex flex-col items-center">
+                <span className="text-emerald-400 font-black text-lg">{gameState.turn_correct_count}</span>
+                <span className="text-slate-400 text-[10px]">Doğru (+{gameState.turn_correct_count})</span>
+              </div>
+              <div className="flex flex-col items-center border-x border-slate-800">
+                <span className="text-amber-400 font-black text-lg">{gameState.turn_pass_count}</span>
+                <span className="text-slate-400 text-[10px]">Pas</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-red-400 font-black text-lg">{gameState.turn_tabu_count}</span>
+                <span className="text-slate-400 text-[10px]">Tabu ({gameState.turn_tabu_count * settings.buzzer_penalty})</span>
+              </div>
+            </div>
+
+            <div className="w-full py-2 px-4 rounded-xl bg-slate-950/40 border border-slate-800/80 flex justify-between text-xs font-bold">
+              <span className="text-slate-400">Takımın Toplam Skoru:</span>
               <span className="text-white font-extrabold">{activeTeam?.score} Puan</span>
             </div>
 
@@ -199,6 +207,9 @@ export default function PlayPage() {
             onPass={recordPass}
             onBuzzer={() => recordBuzzer()}
             remainingPasses={gameState.remaining_passes}
+            correctCount={gameState.turn_correct_count}
+            passCount={gameState.turn_pass_count}
+            tabuCount={gameState.turn_tabu_count}
           />
         ) : (
           <div className="h-14 flex items-center justify-center text-xs text-slate-500">
