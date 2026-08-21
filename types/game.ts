@@ -27,6 +27,8 @@ export interface Team {
   color: string;
   score: number;
   order_index: number;
+  player_count?: number;
+  players?: string[];
 }
 
 export interface Player {
@@ -55,6 +57,8 @@ export interface GameSettings {
   winning_score?: number | null;
   golden_round_enabled?: boolean;
   break_duration?: number; // 3, 5, 0 (manual)
+  turn_selection_mode?: 'total_rounds' | 'per_player';
+  rounds_per_player?: number; // e.g. 1, 2, 3 times per person
   categories: (Category | string)[];
   difficulty: Difficulty | 'Tümü';
   deck_id?: string | null;

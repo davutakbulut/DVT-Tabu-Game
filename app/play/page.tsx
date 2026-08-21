@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '@/stores/gameStore';
 import { useUserStore } from '@/stores/userStore';
@@ -12,7 +12,7 @@ import { ScoreBoard } from '@/components/game/ScoreBoard';
 import { Timer } from '@/components/game/Timer';
 import { Button } from '@/components/ui/Button';
 import { InterstitialAdModal } from '@/components/ads/InterstitialAdModal';
-import { Play, Pause, RotateCcw, AlertTriangle, ArrowRight, Trophy, CheckCircle2, FastForward, AlertOctagon } from 'lucide-react';
+import { Play, Pause, RotateCcw, AlertTriangle, ArrowRight, Trophy, CheckCircle2, FastForward, AlertOctagon, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdConfig, DEFAULT_AD_CONFIG } from '@/types/ads';
 
@@ -68,6 +68,12 @@ export default function PlayPage() {
   }, [gameState.status, router]);
 
   const activeTeam = teams[gameState.active_team_index] || teams[0];
+
+  const activePresenterName = useMemo(() => {
+    if (!activeTeam?.players || activeTeam.players.length === 0) return null;
+    const playerIdx = (Math.floor(gameState.current_round - 1)) % activeTeam.players.length;
+    return activeTeam.players[playerIdx];
+  }, [activeTeam, gameState.current_round]);
 
   const handleNextTeam = () => {
     const nextTurn = turnsPlayed + 1;
@@ -152,6 +158,12 @@ export default function PlayPage() {
               <h2 className="text-2xl font-black text-white mt-1">
                 {activeTeam?.name}
               </h2>
+              {activePresenterName && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 mt-2 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-black">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>🎤 Sıradaki Anlatıcı: <strong className="text-white">{activePresenterName}</strong></span>
+                </div>
+              )}
             </div>
 
             <p className="text-xs text-slate-400 max-w-xs">

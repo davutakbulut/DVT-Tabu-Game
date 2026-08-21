@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '@/stores/gameStore';
 import { useUserStore } from '@/stores/userStore';
@@ -35,7 +35,8 @@ import {
   CheckCircle2,
   Timer,
   Gauge,
-  HelpCircle
+  HelpCircle,
+  UserCheck
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
@@ -81,8 +82,20 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
   // Preset Mode Selection
   const [activePreset, setActivePreset] = useState<'classic' | 'blitz' | 'hardcore' | 'chill' | 'custom'>('classic');
 
+  // Teams with Squad/Players
+  const [teams, setTeams] = useState<Team[]>(
+    storeTeams.map((t, idx) => ({
+      ...t,
+      player_count: t.player_count || t.players?.length || 2,
+      players: t.players && t.players.length > 0 ? t.players : [`Oyuncu 1`, `Oyuncu 2`],
+    }))
+  );
+
+  // Turn Calculation Mode
+  const [turnSelectionMode, setTurnSelectionMode] = useState<'total_rounds' | 'per_player'>('total_rounds');
+  const [roundsPerPlayer, setRoundsPerPlayer] = useState<number>(2);
+
   // Wizard Rules State
-  const [teams, setTeams] = useState<Team[]>(storeTeams);
   const [turnDuration, setTurnDuration] = useState<number>(storeSettings.turn_duration || 60);
   const [passLimit, setPassLimit] = useState<number>(storeSettings.pass_limit ?? 3);
   const [passPenalty, setPassPenalty] = useState<number>(storeSettings.pass_penalty ?? 0);
@@ -134,6 +147,12 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
     }
   };
 
+  // Dynamic Calculated Rounds when in 'per_player' mode
+  const calculatedRounds = useMemo(() => {
+    const maxPlayersInAnyTeam = Math.max(...teams.map((t) => t.players?.length || 2), 2);
+    return maxPlayersInAnyTeam * roundsPerPlayer;
+  }, [teams, roundsPerPlayer]);
+
   // --- Presets Handler ---
   const handleApplyPreset = (preset: 'classic' | 'blitz' | 'hardcore' | 'chill') => {
     setActivePreset(preset);
@@ -151,6 +170,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
       setGoldenRound(true);
       setDifficulty('Tümü');
       setBreakDuration(3);
+      setTurnSelectionMode('total_rounds');
     } else if (preset === 'blitz') {
       setTurnDuration(30);
       setPassLimit(1);
@@ -163,6 +183,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
       setGoldenRound(true);
       setDifficulty('Tümü');
       setBreakDuration(3);
+      setTurnSelectionMode('total_rounds');
     } else if (preset === 'hardcore') {
       setTurnDuration(45);
       setPassLimit(0);
@@ -175,6 +196,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
       setGoldenRound(true);
       setDifficulty('Zor');
       setBreakDuration(5);
+      setTurnSelectionMode('total_rounds');
     } else if (preset === 'chill') {
       setTurnDuration(90);
       setPassLimit(999);
@@ -187,10 +209,11 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
       setGoldenRound(false);
       setDifficulty('Kolay');
       setBreakDuration(0);
+      setTurnSelectionMode('total_rounds');
     }
   };
 
-  // --- Step 1: Team Management ---
+  // --- Step 1: Team & Player Management ---
   const handleAddTeam = () => {
     if (teams.length >= 6) return;
 
@@ -211,6 +234,8 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
       color: nextColor,
       score: 0,
       order_index: nextIndex,
+      player_count: 2,
+      players: ['Oyuncu 1', 'Oyuncu 2'],
     };
 
     setTeams([...teams, newTeam]);
@@ -238,6 +263,67 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
     setTeams(teams.map((t) => (t.id === id ? { ...t, color } : t)));
   };
 
+  // Team Squad (Players) Handlers
+  const handleSetTeamPlayerCount = (teamId: string, count: number) => {
+    setTeams(
+      teams.map((t) => {
+        if (t.id !== teamId) return t;
+        const currentPlayers = t.players || [];
+        let newPlayers = [...currentPlayers];
+        if (count > currentPlayers.length) {
+          for (let i = currentPlayers.length; i < count; i++) {
+            newPlayers.push(`Oyuncu ${i + 1}`);
+          }
+        } else {
+          newPlayers = newPlayers.slice(0, count);
+        }
+        return {
+          ...t,
+          player_count: count,
+          players: newPlayers,
+        };
+      })
+    );
+    soundManager.play('pass');
+  };
+
+  const handleUpdatePlayerName = (teamId: string, playerIndex: number, newName: string) => {
+    setTeams(
+      teams.map((t) => {
+        if (t.id !== teamId) return t;
+        const players = [...(t.players || [])];
+        players[playerIndex] = newName;
+        return { ...t, players };
+      })
+    );
+  };
+
+  const handleAddPlayer = (teamId: string) => {
+    setTeams(
+      teams.map((t) => {
+        if (t.id !== teamId) return t;
+        const players = [...(t.players || [])];
+        if (players.length >= 8) return t;
+        players.push(`Oyuncu ${players.length + 1}`);
+        return { ...t, player_count: players.length, players };
+      })
+    );
+    soundManager.play('correct');
+  };
+
+  const handleRemovePlayer = (teamId: string, playerIndex: number) => {
+    setTeams(
+      teams.map((t) => {
+        if (t.id !== teamId) return t;
+        const players = [...(t.players || [])];
+        if (players.length <= 2) return t;
+        players.splice(playerIndex, 1);
+        return { ...t, player_count: players.length, players };
+      })
+    );
+    soundManager.play('tabu');
+  };
+
   // --- Step 3: Deck Toggle ---
   const handleToggleDeck = (deckId: string) => {
     const isVipDeck = deckId === 'deck-memes-2026';
@@ -262,6 +348,8 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
 
   // --- Final Launch ---
   const handleStartGame = async () => {
+    const finalRounds = turnSelectionMode === 'per_player' ? calculatedRounds : totalRounds;
+
     const finalSettings: Partial<GameSettings> = {
       team_count: teams.length,
       turn_duration: turnDuration,
@@ -271,7 +359,9 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
       buzzer_penalty: tabuPenalty,
       correct_points: correctPoints,
       target_score: targetScore === 0 ? null : targetScore,
-      total_rounds: totalRounds,
+      total_rounds: finalRounds,
+      turn_selection_mode: turnSelectionMode,
+      rounds_per_player: roundsPerPlayer,
       golden_round_enabled: goldenRound,
       difficulty,
       break_duration: breakDuration,
@@ -376,29 +466,36 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
 
         {/* Scrollable Wizard Body */}
         <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-4">
-          {/* ================= STEP 1: TEAMS ================= */}
+          {/* ================= STEP 1: TEAMS & PLAYERS ================= */}
           {currentStep === 1 && (
             <div className="flex flex-col gap-3 animate-in fade-in">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-white uppercase tracking-wider">
-                  Yarışacak Takımlar ({teams.length}/6)
-                </span>
+                <div>
+                  <span className="text-xs font-black text-white uppercase tracking-wider block">
+                    Yarışacak Takımlar & Kadrolar ({teams.length}/6)
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    Her takımın kişi sayısını ve oyuncu isimlerini belirleyin
+                  </span>
+                </div>
+
                 {teams.length < 6 && (
                   <button
                     onClick={handleAddTeam}
-                    className="flex items-center gap-1 text-xs font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 py-1.5 px-3 rounded-xl border border-indigo-500/20 transition-all"
+                    className="flex items-center gap-1 text-xs font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 py-1.5 px-3 rounded-xl border border-indigo-500/20 transition-all shrink-0"
                   >
                     <Plus className="w-3.5 h-3.5" /> Takım Ekle
                   </button>
                 )}
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 {teams.map((team, idx) => (
                   <div
                     key={team.id}
-                    className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-2.5 shadow-sm"
+                    className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3 shadow-md"
                   >
+                    {/* Top Row: Color + Name + Randomize + Delete */}
                     <div className="flex items-center gap-2">
                       <div
                         className="w-4 h-4 rounded-full shrink-0 shadow-sm"
@@ -415,7 +512,7 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                       <button
                         onClick={() => handleRandomizeTeamName(team.id)}
                         className="p-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white"
-                        title="Rastgele İsim"
+                        title="Rastgele Takım Adı"
                       >
                         <Dices className="w-3.5 h-3.5" />
                       </button>
@@ -438,11 +535,77 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                           type="button"
                           onClick={() => handleUpdateTeamColor(team.id, c)}
                           style={{ backgroundColor: c }}
-                          className={`w-4 h-4 rounded-full transition-transform ${
+                          className={`w-3.5 h-3.5 rounded-full transition-transform ${
                             team.color === c ? 'scale-125 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
                           }`}
                         />
                       ))}
+                    </div>
+
+                    {/* Team Squad & Player Count */}
+                    <div className="flex flex-col gap-2 pt-2 border-t border-slate-900">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                          <Users className="w-3 h-3 text-indigo-400" /> Kadro ({team.players?.length || 2} Kişi):
+                        </span>
+                        {/* Quick Count Selectors */}
+                        <div className="flex items-center gap-1">
+                          {[2, 3, 4, 5].map((cnt) => (
+                            <button
+                              key={cnt}
+                              type="button"
+                              onClick={() => handleSetTeamPlayerCount(team.id, cnt)}
+                              className={`px-2 py-0.5 rounded-lg text-[10px] font-black border transition-all ${
+                                (team.players?.length || 2) === cnt
+                                  ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
+                                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                              }`}
+                            >
+                              {cnt} Kişi
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Player Names Tag Grid */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {(team.players || ['Oyuncu 1', 'Oyuncu 2']).map((player, pIdx) => (
+                          <div
+                            key={pIdx}
+                            className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-xl px-2 py-1 text-[11px] font-bold text-slate-200"
+                          >
+                            <span className="text-[9px] text-indigo-400 font-mono">#{pIdx + 1}</span>
+                            <input
+                              type="text"
+                              value={player}
+                              onChange={(e) => handleUpdatePlayerName(team.id, pIdx, e.target.value)}
+                              className="bg-transparent text-[11px] font-bold text-white focus:outline-none w-20 truncate"
+                              placeholder={`Oyuncu ${pIdx + 1}`}
+                              maxLength={16}
+                            />
+                            {(team.players?.length || 2) > 2 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePlayer(team.id, pIdx)}
+                                className="text-slate-500 hover:text-rose-400 p-0.5"
+                                title="Oyuncuyu Sil"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+
+                        {(team.players?.length || 2) < 8 && (
+                          <button
+                            type="button"
+                            onClick={() => handleAddPlayer(team.id)}
+                            className="flex items-center gap-1 text-[10px] font-black text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-2 py-1 rounded-xl border border-indigo-500/20 transition-all"
+                          >
+                            <Plus className="w-3 h-3" /> Ekle
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -699,27 +862,88 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
                 </div>
               </div>
 
-              {/* 6. Toplam Tur Sayısı */}
+              {/* 6. Tur Hesaplama Modu: Sabit Tur vs Kişi Başı Anlatım */}
               <div>
-                <label className="text-xs font-black text-white uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                  <Trophy className="w-3.5 h-3.5 text-purple-400" /> Toplam Tur Sayısı
-                </label>
-                <div className="grid grid-cols-6 gap-1">
-                  {[4, 6, 8, 10, 12, 16].map((rounds) => (
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <Trophy className="w-3.5 h-3.5 text-purple-400" /> Tur Hesaplama Modu
+                  </label>
+                  <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-xl border border-slate-800 text-[10px] font-black">
                     <button
-                      key={rounds}
                       type="button"
-                      onClick={() => { setTotalRounds(rounds); setActivePreset('custom'); }}
-                      className={`py-2 rounded-xl text-xs font-black border transition-all ${
-                        totalRounds === rounds
-                          ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-500/20'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                      onClick={() => setTurnSelectionMode('total_rounds')}
+                      className={`px-2 py-1 rounded-lg transition-all ${
+                        turnSelectionMode === 'total_rounds'
+                          ? 'bg-purple-600 text-white'
+                          : 'text-slate-400 hover:text-white'
                       }`}
                     >
-                      {rounds} Tur
+                      Sabit Tur
                     </button>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={() => setTurnSelectionMode('per_player')}
+                      className={`px-2 py-1 rounded-lg transition-all ${
+                        turnSelectionMode === 'per_player'
+                          ? 'bg-purple-600 text-white'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Kişi Başı Tur
+                    </button>
+                  </div>
                 </div>
+
+                {turnSelectionMode === 'total_rounds' ? (
+                  <div className="grid grid-cols-6 gap-1">
+                    {[4, 6, 8, 10, 12, 16].map((rounds) => (
+                      <button
+                        key={rounds}
+                        type="button"
+                        onClick={() => { setTotalRounds(rounds); setActivePreset('custom'); }}
+                        className={`py-2 rounded-xl text-xs font-black border transition-all ${
+                          totalRounds === rounds
+                            ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-500/20'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        {rounds} Tur
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { val: 1, label: '1x Herkes 1 Kez' },
+                        { val: 2, label: '2x Herkes 2 Kez' },
+                        { val: 3, label: '3x Herkes 3 Kez' },
+                      ].map((rpp) => (
+                        <button
+                          key={rpp.val}
+                          type="button"
+                          onClick={() => { setRoundsPerPlayer(rpp.val); setActivePreset('custom'); }}
+                          className={`py-2 rounded-xl text-xs font-black border transition-all ${
+                            roundsPerPlayer === rpp.val
+                              ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-500/20'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                          }`}
+                        >
+                          {rpp.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-300 font-bold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <UserCheck className="w-3.5 h-3.5 text-purple-400" />
+                        Kadrolara Göre Toplam Tur:
+                      </span>
+                      <span className="font-mono font-black text-white bg-purple-600/40 px-2.5 py-0.5 rounded-md border border-purple-400/40">
+                        {calculatedRounds} Tur Oynanacak
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 7. Hedef Kazanma Puanı, Tur Arası Geçiş & Altın Tur */}
