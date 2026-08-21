@@ -242,20 +242,20 @@ export default function HomePage() {
               </button>
             </div>
 
-            {!isLoggedIn ? (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="text-[10px] font-black text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 py-1.5 px-3 rounded-lg border border-amber-500/30 flex items-center gap-1 shrink-0 transition-all"
-              >
-                <Sparkles className="w-3 h-3 text-amber-400" /> Giriş Yap
-              </button>
-            ) : (
+            {isMounted && isLoggedIn ? (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
                 className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 py-1.5 px-2.5 rounded-lg border border-emerald-500/30 shrink-0 inline-flex items-center gap-1 transition-all cursor-pointer shadow-sm"
                 title="Profili Yönet / Çıkış Yap"
               >
                 <Check className="w-3 h-3" /> {userEmail ? userEmail.split('@')[0] : 'Profilim'}
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="text-[10px] font-black text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 py-1.5 px-3 rounded-lg border border-amber-500/30 flex items-center gap-1 shrink-0 transition-all"
+              >
+                <Sparkles className="w-3 h-3 text-amber-400" /> Giriş Yap
               </button>
             )}
           </div>
