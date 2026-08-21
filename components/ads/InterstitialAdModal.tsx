@@ -13,11 +13,14 @@ import {
   ShieldCheck, 
   ArrowRight,
   Zap,
-  Flame
+  Flame,
+  Maximize2,
+  Clock,
+  CheckCircle2
 } from 'lucide-react';
 import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
-import { AdItem, AdConfig, DEFAULT_AD_CONFIG, DEFAULT_ADS } from '@/types/ads';
+import { AdItem, AdConfig, DEFAULT_AD_CONFIG, DEFAULT_ADS, AdDisplayType } from '@/types/ads';
 
 interface InterstitialAdModalProps {
   isOpen: boolean;
@@ -58,16 +61,20 @@ export function InterstitialAdModal({
         const matchingAds = ads.filter(
           (a) => a.placement === 'all' || a.placement === placement
         );
-        const selected = matchingAds.length > 0
+        const selected: AdItem = matchingAds.length > 0
           ? matchingAds[Math.floor(Math.random() * matchingAds.length)]
           : ads[0] || DEFAULT_ADS[0];
 
         setCurrentAd(selected);
 
-        // Setup Countdown
-        const initialDelay = config.skip_delay_seconds ?? 3;
-        setCountdown(initialDelay);
-        setCanSkip(initialDelay <= 0);
+        // Setup Countdown based on per-ad or global settings
+        const isSkippable = selected.is_skippable !== false;
+        const delay = isSkippable 
+          ? (selected.skip_delay_seconds ?? config.skip_delay_seconds ?? 3)
+          : (selected.duration_seconds ?? 5);
+
+        setCountdown(delay);
+        setCanSkip(isSkippable && delay <= 0);
 
         // Record Impression
         recordAdImpression(selected.id);
@@ -79,7 +86,7 @@ export function InterstitialAdModal({
   };
 
   useEffect(() => {
-    if (!isOpen || canSkip) return;
+    if (!isOpen) return;
 
     if (countdown > 0) {
       const timer = setTimeout(() => {
@@ -87,9 +94,15 @@ export function InterstitialAdModal({
       }, 1000);
       return () => clearTimeout(timer);
     } else {
-      setCanSkip(true);
+      const isSkippable = currentAd.is_skippable !== false;
+      if (isSkippable) {
+        setCanSkip(true);
+      } else {
+        // Non-skippable ad finished naturally
+        handleSkipAd();
+      }
     }
-  }, [isOpen, countdown, canSkip]);
+  }, [isOpen, countdown, currentAd]);
 
   const recordAdImpression = (adId: string) => {
     try {
@@ -120,7 +133,6 @@ export function InterstitialAdModal({
   };
 
   const handleSkipAd = () => {
-    if (!canSkip) return;
     soundManager.play('pass');
     onClose();
     if (onAdFinished) onAdFinished();
@@ -128,6 +140,184 @@ export function InterstitialAdModal({
 
   if (!isOpen) return null;
 
+  const displayType: AdDisplayType = currentAd.display_type || adConfig.default_display_type || 'popup';
+  const isSkippable = currentAd.is_skippable !== false;
+
+  // ==========================================
+  // 1. TAM EKRAN (FULLSCREEN TAKEOVER) MODU
+  // ==========================================
+  if (displayType === 'fullscreen') {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col justify-between p-4 sm:p-6 bg-slate-950 text-white animate-in fade-in duration-300 overflow-y-auto">
+        {/* Background Image Ambient Glow */}
+        {currentAd.image_url && (
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-15 blur-2xl pointer-events-none"
+            style={{ backgroundImage: `url(${currentAd.image_url})` }}
+          />
+        )}
+
+        {/* Top Header Controls */}
+        <div className="relative z-10 w-full max-w-2xl mx-auto flex items-center justify-between py-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black font-mono text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30 flex items-center gap-1.5 shadow-sm">
+              <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+              {currentAd.badge || 'SPONSORLU YAYIN'}
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+              Tam Ekran
+            </span>
+          </div>
+
+          {/* Skip / Timer Action */}
+          {isSkippable ? (
+            canSkip ? (
+              <button
+                onClick={handleSkipAd}
+                className="text-xs font-black text-white bg-indigo-600 hover:bg-indigo-500 py-1.5 px-4 rounded-full flex items-center gap-1.5 transition-all shadow-lg shadow-indigo-500/30 animate-pulse active:scale-95"
+              >
+                <span>Reklamı Geç</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <div className="text-xs font-bold text-slate-300 font-mono bg-slate-900/90 py-1.5 px-3.5 rounded-full border border-slate-800 flex items-center gap-1.5 shadow-md">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span>{countdown}s sonra geçebilirsiniz</span>
+              </div>
+            )
+          ) : (
+            <div className="text-xs font-bold text-slate-300 font-mono bg-slate-900/90 py-1.5 px-3.5 rounded-full border border-slate-800 flex items-center gap-1.5 shadow-md">
+              <Clock className="w-3.5 h-3.5 text-rose-400" />
+              <span>Sponsorlu Gösterim: {countdown}s</span>
+            </div>
+          )}
+        </div>
+
+        {/* Fullscreen Hero Showcase */}
+        <div className="relative z-10 w-full max-w-md mx-auto my-auto flex flex-col items-center text-center gap-5 py-4">
+          {currentAd.image_url ? (
+            <div className="w-full max-h-[360px] aspect-video rounded-3xl overflow-hidden border-2 border-slate-800 shadow-2xl relative group bg-slate-900">
+              <img
+                src={currentAd.image_url}
+                alt={currentAd.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
+            </div>
+          ) : (
+            <div className={`w-full h-56 rounded-3xl bg-gradient-to-br ${currentAd.color_theme || 'from-indigo-600 to-purple-800'} flex items-center justify-center text-white shadow-2xl`}>
+              <Sparkles className="w-16 h-16 animate-pulse" />
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">
+              {currentAd.title}
+            </h2>
+            <p className="text-sm text-slate-300 leading-relaxed max-w-sm">
+              {currentAd.description}
+            </p>
+          </div>
+
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={handleAdClick}
+            className="font-black text-base py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:opacity-95 text-white shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2"
+          >
+            <span>{currentAd.cta_text || 'Hemen İncele'}</span>
+            <ExternalLink className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Footer Pro Link */}
+        <div className="relative z-10 w-full max-w-2xl mx-auto text-center py-2 border-t border-slate-800/80">
+          <button
+            onClick={() => setIsPaywallOpen(true)}
+            className="text-xs font-bold text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1.5 transition-colors"
+          >
+            <Crown className="w-4 h-4 text-amber-400 fill-amber-400" />
+            <span>Reklamları tamamen kaldırmak için <strong>Pro'ya Yükselt</strong></span>
+          </button>
+        </div>
+
+        <PaywallModal
+          isOpen={isPaywallOpen}
+          onClose={() => setIsPaywallOpen(false)}
+          triggerSource="ad_modal_fullscreen"
+        />
+      </div>
+    );
+  }
+
+  // ==========================================
+  // 2. ALT SABİT BANNER (BANNER BOTTOM) MODU
+  // ==========================================
+  if (displayType === 'banner_bottom') {
+    return (
+      <div className="fixed bottom-0 inset-x-0 z-50 p-3 sm:p-4 bg-gradient-to-t from-slate-950 via-slate-950/95 to-slate-950/80 backdrop-blur-md border-t border-slate-800 shadow-2xl animate-in slide-in-from-bottom duration-300">
+        <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {currentAd.image_url ? (
+              <img
+                src={currentAd.image_url}
+                alt={currentAd.title}
+                className="w-12 h-12 rounded-xl object-cover border border-slate-800 shrink-0"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0">
+                <Sparkles className="w-6 h-6" />
+              </div>
+            )}
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  {currentAd.badge || 'SPONSOR'}
+                </span>
+                <span className="text-xs font-black text-white truncate">
+                  {currentAd.title}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 truncate mt-0.5">
+                {currentAd.description}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleAdClick}
+              className="py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black flex items-center gap-1 shadow-md shadow-indigo-600/30"
+            >
+              <span>{currentAd.cta_text || 'İncele'}</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </button>
+
+            {isSkippable && (
+              <button
+                onClick={handleSkipAd}
+                disabled={!canSkip}
+                className={`p-2 rounded-xl border text-xs font-bold transition-all ${
+                  canSkip
+                    ? 'bg-slate-800 text-slate-300 hover:text-white border-slate-700'
+                    : 'bg-slate-900 text-slate-600 border-slate-800 cursor-not-allowed'
+                }`}
+                title={canSkip ? 'Kapat' : `${countdown}s bekleyin`}
+              >
+                {canSkip ? <X className="w-4 h-4" /> : <span className="font-mono text-[10px]">{countdown}s</span>}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // 3. POPUP MODAL (DEFAULT CENTERED CARD) MODU
+  // ==========================================
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-lg animate-in fade-in duration-200">
       <motion.div
@@ -143,17 +333,23 @@ export function InterstitialAdModal({
             {currentAd.badge || 'SPONSORLU İÇERİK'}
           </span>
 
-          {canSkip ? (
-            <button
-              onClick={handleSkipAd}
-              className="text-xs font-black text-white bg-indigo-600 hover:bg-indigo-500 py-1 px-3 rounded-full flex items-center gap-1 transition-all shadow-md shadow-indigo-500/30 animate-pulse"
-            >
-              <span>Reklamı Geç</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+          {isSkippable ? (
+            canSkip ? (
+              <button
+                onClick={handleSkipAd}
+                className="text-xs font-black text-white bg-indigo-600 hover:bg-indigo-500 py-1 px-3 rounded-full flex items-center gap-1 transition-all shadow-md shadow-indigo-500/30 animate-pulse"
+              >
+                <span>Reklamı Geç</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <div className="text-[11px] font-bold text-slate-400 font-mono bg-slate-900 py-1 px-2.5 rounded-full border border-slate-800">
+                {countdown}s sonra geçebilirsiniz
+              </div>
+            )
           ) : (
-            <div className="text-[11px] font-bold text-slate-400 font-mono bg-slate-900 py-1 px-2.5 rounded-full border border-slate-800">
-              {countdown}s sonra geçebilirsiniz
+            <div className="text-[11px] font-bold text-rose-400 font-mono bg-slate-900 py-1 px-2.5 rounded-full border border-slate-800">
+              {countdown}s kaldı
             </div>
           )}
         </div>

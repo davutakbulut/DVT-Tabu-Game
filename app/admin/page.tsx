@@ -2011,6 +2011,34 @@ export default function AdminPortalPage() {
               </div>
             </div>
 
+            {/* Global Default Display Format */}
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-2">
+                Varsayılan Reklam Formatı (Global Default):
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { type: 'fullscreen', label: 'Tam Ekran', desc: 'Sürükleyici Geçiş' },
+                  { type: 'popup', label: 'Popup Modal', desc: 'Merkezi Kart' },
+                  { type: 'banner_bottom', label: 'Alt Banner', desc: 'Sabit Şerit' },
+                ].map((item) => (
+                  <button
+                    key={item.type}
+                    type="button"
+                    onClick={() => setAdConfig({ ...adConfig, default_display_type: item.type as any })}
+                    className={`py-2.5 px-3 rounded-2xl text-left flex flex-col gap-0.5 border transition-all ${
+                      (adConfig.default_display_type || 'popup') === item.type
+                        ? 'bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-500/20'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="text-xs font-black">{item.label}</span>
+                    <span className="text-[9px] text-slate-400">{item.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Skip Delay Countdown */}
             <div>
               <label className="text-xs font-bold text-slate-300 block mb-2">
@@ -2116,6 +2144,10 @@ export default function AdminPortalPage() {
                     cta_text: 'Hemen İncele',
                     target_url: 'https://portegu.com',
                     placement: 'all',
+                    display_type: 'popup',
+                    is_skippable: true,
+                    skip_delay_seconds: 3,
+                    duration_seconds: 8,
                     color_theme: 'from-indigo-600 to-purple-800',
                     is_active: true,
                     impressions: 0,
@@ -2159,12 +2191,15 @@ export default function AdminPortalPage() {
                         )}
 
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
                               {ad.badge || 'REKLAM'}
                             </span>
-                            <span className="text-[9px] text-slate-400 font-mono">
-                              {ad.placement}
+                            <span className="text-[9px] text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30 font-mono">
+                              {ad.display_type === 'fullscreen' ? 'Tam Ekran' : ad.display_type === 'banner_bottom' ? 'Alt Banner' : 'Popup Modal'}
+                            </span>
+                            <span className="text-[9px] text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded font-mono">
+                              {ad.is_skippable !== false ? `${ad.skip_delay_seconds ?? 3}s Geçilebilir` : 'Zorunlu'}
                             </span>
                           </div>
                           <h4 className="text-xs font-black text-white truncate mt-1">{ad.title}</h4>
@@ -3093,6 +3128,90 @@ export default function AdminPortalPage() {
                     <option value="round_end">Tur Sonlarında (Round End)</option>
                     <option value="match_end">Maç Sonunda (Match Summary)</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Reklam Gösterim Formatı (Tam Ekran vs Popup vs Banner) */}
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1 font-bold">
+                  Reklam Gösterim Formatı (Display Type):
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { type: 'fullscreen', label: 'Tam Ekran', desc: 'Sürükleyici Geçiş' },
+                    { type: 'popup', label: 'Popup Modal', desc: 'Merkezi Kart' },
+                    { type: 'banner_bottom', label: 'Alt Banner', desc: 'Sabit Şerit' },
+                  ].map((f) => (
+                    <button
+                      key={f.type}
+                      type="button"
+                      onClick={() => setEditingAd({ ...editingAd, display_type: f.type as any })}
+                      className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all ${
+                        (editingAd.display_type || 'popup') === f.type
+                          ? 'bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-500/20'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <span className="text-xs font-black">{f.label}</span>
+                      <span className="text-[9px] text-slate-400">{f.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reklama Özel Geçilebilirlik & Süre Ayarları */}
+              <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-white block">Geçilebilir Reklam (Skippable)</span>
+                    <span className="text-[10px] text-slate-400">
+                      {editingAd.is_skippable !== false 
+                        ? 'Kullanıcı belirli saniye sonra reklamı kapatabilir' 
+                        : 'Kullanıcı reklamı geçemez (Süre sonuna kadar zorunlu)'}
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={editingAd.is_skippable !== false}
+                    onChange={(e) => setEditingAd({ ...editingAd, is_skippable: e.target.checked })}
+                    className="rounded accent-indigo-500 w-5 h-5 cursor-pointer"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-800/80">
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-1">
+                      Kaç Saniye Sonra Geçilsin?:
+                    </label>
+                    <select
+                      disabled={editingAd.is_skippable === false}
+                      value={editingAd.skip_delay_seconds ?? 3}
+                      onChange={(e) => setEditingAd({ ...editingAd, skip_delay_seconds: Number(e.target.value) })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs font-bold text-white focus:outline-none focus:border-indigo-500 disabled:opacity-40"
+                    >
+                      <option value={0}>0 sn (Anında Kapatılabilir)</option>
+                      <option value={3}>3 saniye sonra</option>
+                      <option value={5}>5 saniye sonra</option>
+                      <option value={10}>10 saniye sonra</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-1">
+                      Toplam Gösterim Süresi:
+                    </label>
+                    <select
+                      value={editingAd.duration_seconds ?? 8}
+                      onChange={(e) => setEditingAd({ ...editingAd, duration_seconds: Number(e.target.value) })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs font-bold text-white focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value={5}>5 saniye</option>
+                      <option value={8}>8 saniye</option>
+                      <option value={10}>10 saniye</option>
+                      <option value={15}>15 saniye</option>
+                      <option value={30}>30 saniye</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
