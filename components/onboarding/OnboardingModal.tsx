@@ -352,18 +352,18 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
         {/* Primary CTA Button */}
         <Button
-          variant="primary"
+          variant={currentStep === steps.length - 1 ? 'success' : 'primary'}
           size="lg"
           fullWidth
           onClick={handleNext}
-          className="shadow-2xl shadow-indigo-500/30 font-black text-base py-4 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:opacity-95 rounded-2xl"
+          className="font-black text-base py-4 rounded-xl"
         >
           {currentStep === steps.length - 1 ? (
-            <span className="flex items-center justify-center gap-2 text-white">
+            <span className="flex items-center justify-center gap-2">
               {step.cta_text || 'Arenaya Başla!'} <Check className="w-5 h-5" />
             </span>
           ) : (
-            <span className="flex items-center justify-center gap-2 text-white">
+            <span className="flex items-center justify-center gap-2">
               {step.cta_text || 'Devam Et'} <ArrowRight className="w-5 h-5" />
             </span>
           )}

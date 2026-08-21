@@ -32,7 +32,7 @@ export function ActiveGameBanner() {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="w-full max-w-md mx-auto mb-4 p-4 rounded-3xl bg-gradient-to-r from-indigo-950/90 via-purple-950/90 to-slate-900/90 border border-indigo-500/50 shadow-2xl backdrop-blur-md flex flex-col gap-3"
+      className="w-full max-w-md mx-auto mb-4 p-4 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-emerald-500/40 shadow-2xl backdrop-blur-md flex flex-col gap-3"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -47,7 +47,7 @@ export function ActiveGameBanner() {
       </div>
 
       {/* Teams Score Bar */}
-      <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-950/70 border border-slate-800/80">
+      <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800">
         <div className="flex items-center gap-2 min-w-0">
           <div
             className="w-3 h-3 rounded-full shrink-0"
@@ -70,10 +70,10 @@ export function ActiveGameBanner() {
       {/* Actions */}
       <div className="flex items-center gap-2">
         <Button
-          variant="primary"
+          variant="success"
           size="sm"
           onClick={() => router.push('/play')}
-          className="flex-1 text-xs py-2.5 font-black bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-95 shadow-md shadow-emerald-500/25 flex items-center justify-center gap-1.5"
+          className="flex-1 text-xs py-2.5 font-black flex items-center justify-center gap-1.5"
         >
           <Play className="w-3.5 h-3.5 fill-white" />
           <span>Kaldığın Yerden Devam Et</span>

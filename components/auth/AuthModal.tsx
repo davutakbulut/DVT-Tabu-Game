@@ -428,7 +428,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   type="submit"
                   disabled={loading}
                   fullWidth
-                  className="py-3 text-xs font-black bg-gradient-to-r from-indigo-500 to-purple-600 shadow-md shadow-indigo-500/25 mt-1"
+                  className="py-3 text-xs font-black mt-1 rounded-xl"
                 >
                   {loading
                     ? 'İşleniyor...'

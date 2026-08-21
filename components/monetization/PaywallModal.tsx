@@ -178,7 +178,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                 size="lg"
                 fullWidth
                 onClick={handleUpgrade}
-                className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 border-0"
+                className="text-sm font-black rounded-xl"
               >
                 <Crown className="w-5 h-5 mr-1.5 fill-slate-950" />
                 Hemen Pro'ya Yükselt

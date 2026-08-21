@@ -1144,16 +1144,16 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
               variant="primary"
               size="md"
               onClick={() => setCurrentStep((currentStep + 1) as any)}
-              className="text-xs font-black py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-500/25 ml-auto"
+              className="text-xs font-black py-2.5 px-5 ml-auto rounded-xl"
             >
               İleri: {currentStep === 1 ? 'Kurallar' : 'Desteler'} <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
             <Button
-              variant="primary"
+              variant="success"
               size="md"
               onClick={handleStartGame}
-              className="text-xs font-black py-2.5 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-95 shadow-lg shadow-emerald-500/25 ml-auto flex items-center gap-1.5"
+              className="text-xs font-black py-2.5 px-6 ml-auto flex items-center gap-1.5 rounded-xl"
             >
               <Play className="w-4 h-4 fill-white" /> Oyunu Başlat
             </Button>

@@ -252,13 +252,13 @@ export const RuleSettingsModal: React.FC<RuleSettingsModalProps> = ({
         </div>
 
         {/* Modal Bottom Actions (Clean & Perfectly Aligned) */}
-        <div className="pt-4 mt-3 border-t border-slate-800/80 flex items-center gap-3">
+        <div className="pt-4 mt-3 border-t border-slate-800 flex items-center gap-3">
           <Button
             variant="secondary"
             size="lg"
             fullWidth
             onClick={onClose}
-            className="text-xs font-bold py-3.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60"
+            className="text-xs font-bold py-3.5 rounded-xl"
           >
             İptal
           </Button>
@@ -267,7 +267,7 @@ export const RuleSettingsModal: React.FC<RuleSettingsModalProps> = ({
             size="lg"
             fullWidth
             onClick={handleSave}
-            className="text-xs font-extrabold py-3.5 rounded-2xl shadow-lg shadow-indigo-500/25 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500"
+            className="text-xs font-black py-3.5 rounded-xl"
           >
             Ayarları Uygula
           </Button>

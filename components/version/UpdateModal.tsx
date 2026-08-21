@@ -112,7 +112,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose, updat
               fullWidth
               onClick={handleApplyUpdate}
               disabled={updating}
-              className="py-3.5 font-black text-sm shadow-lg shadow-indigo-500/25 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500"
+              className="py-3.5 font-black text-sm rounded-xl"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${updating ? 'animate-spin' : ''}`} />
               {updating ? 'Önbellek Temizleniyor & Güncelleniyor...' : 'Hemen Güncelle ve Yenile'}

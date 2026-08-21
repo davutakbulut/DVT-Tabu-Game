@@ -290,7 +290,7 @@ export function InterstitialAdModal({
             size="lg"
             fullWidth
             onClick={handleAdClick}
-            className="font-black text-base py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:opacity-95 text-white shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2"
+            className="font-black text-base py-4 rounded-xl flex items-center justify-center gap-2"
           >
             <span>{currentAd.cta_text || 'Hemen İncele'}</span>
             <ExternalLink className="w-5 h-5" />
@@ -452,7 +452,7 @@ export function InterstitialAdModal({
             size="lg"
             fullWidth
             onClick={handleAdClick}
-            className="font-black text-xs py-3.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:opacity-95 text-white shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2"
+            className="font-black text-xs py-3.5 flex items-center justify-center gap-2 rounded-xl"
           >
             <span>{currentAd.cta_text || 'Hemen İncele'}</span>
             <ExternalLink className="w-4 h-4" />

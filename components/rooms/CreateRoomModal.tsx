@@ -516,18 +516,18 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
               variant="primary"
               size="md"
               onClick={handleNext}
-              className="text-xs font-black py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-500/20"
+              className="text-xs font-black py-2.5 px-5 rounded-xl"
             >
               <span>İlerle</span>
               <ArrowRight className="w-3.5 h-3.5 ml-1" />
             </Button>
           ) : (
             <Button
-              variant="primary"
+              variant="success"
               size="md"
               onClick={handleCreateRoom}
               disabled={loading}
-              className="text-xs font-black py-2.5 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-95 text-white shadow-xl shadow-emerald-500/25"
+              className="text-xs font-black py-2.5 px-6 rounded-xl"
             >
               <Gamepad2 className="w-4 h-4 mr-1.5" />
               <span>{loading ? 'Oda Kuruluyor...' : 'Odayı Aç & Lobiye Geç'}</span>
