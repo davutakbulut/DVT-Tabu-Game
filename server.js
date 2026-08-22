@@ -1,27 +1,38 @@
 const http = require('http');
 const { parse } = require('url');
+const path = require('path');
 const next = require('next');
 
 const dev = false;
+const hostname = '0.0.0.0';
 const port = process.env.PORT || 3000;
 
-const app = next({ dev, dir: __dirname });
+// Initialize Next.js app
+const app = next({ dev, hostname, port, dir: __dirname });
 const handle = app.getRequestHandler();
 
 app.prepare()
   .then(() => {
-    http.createServer(async (req, res) => {
+    const server = http.createServer((req, res) => {
       try {
         const parsedUrl = parse(req.url, true);
-        await handle(req, res, parsedUrl);
+        handle(req, res, parsedUrl);
       } catch (err) {
-        console.error('Server error handling request:', req.url, err);
+        console.error('Request Handling Error:', err);
         res.statusCode = 500;
-        res.end('Internal Server Error: ' + (err && err.message ? err.message : ''));
+        res.end('Internal Server Error');
       }
-    }).listen(port);
+    });
+
+    server.listen(port, (err) => {
+      if (err) {
+        console.error('Server Listen Error:', err);
+        process.exit(1);
+      }
+      console.log(`> DVT Tabu Game server running on ${port}`);
+    });
   })
   .catch((err) => {
-    console.error('Next.js startup error:', err);
+    console.error('Next.js app.prepare() Failed:', err);
     process.exit(1);
   });
