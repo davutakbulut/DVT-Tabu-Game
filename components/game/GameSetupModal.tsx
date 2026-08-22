@@ -116,6 +116,36 @@ export function GameSetupModal({ isOpen, onClose }: GameSetupModalProps) {
   useEffect(() => {
     if (isOpen) {
       setCurrentStep(1);
+      
+      // Sync from latest store state
+      const currentStoreTeams = useGameStore.getState().teams;
+      const currentStoreSettings = useGameStore.getState().settings;
+      
+      if (currentStoreTeams && currentStoreTeams.length > 0) {
+        setTeams(currentStoreTeams.map((t) => ({
+          ...t,
+          player_count: t.player_count || t.players?.length || 2,
+          players: t.players && t.players.length > 0 ? t.players : [`Oyuncu 1`, `Oyuncu 2`],
+        })));
+      }
+      
+      if (currentStoreSettings) {
+        setTurnDuration(currentStoreSettings.turn_duration || 60);
+        setPassLimit(currentStoreSettings.pass_limit ?? 3);
+        setPassPenalty(currentStoreSettings.pass_penalty ?? 0);
+        setTabuLimit(currentStoreSettings.tabu_limit ?? 0);
+        setTabuPenalty(currentStoreSettings.buzzer_penalty ?? -1);
+        setCorrectPoints(currentStoreSettings.correct_points ?? 1);
+        setTargetScore(currentStoreSettings.target_score ?? 50);
+        setTotalRounds(currentStoreSettings.total_rounds || 6);
+        setGoldenRound(currentStoreSettings.golden_round_enabled ?? true);
+        setDifficulty(currentStoreSettings.difficulty || 'Tümü');
+        setBreakDuration(currentStoreSettings.break_duration ?? 3);
+        if (currentStoreSettings.selected_decks && currentStoreSettings.selected_decks.length > 0) {
+          setSelectedDeckIds(currentStoreSettings.selected_decks);
+        }
+      }
+
       analytics.gameSetupStart();
       fetchConfig();
       fetchDecks();

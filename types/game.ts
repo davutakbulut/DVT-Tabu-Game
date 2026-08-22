@@ -62,6 +62,7 @@ export interface GameSettings {
   categories: (Category | string)[];
   difficulty: Difficulty | 'Tümü';
   deck_id?: string | null;
+  selected_decks?: string[];
 }
 
 export interface Room {

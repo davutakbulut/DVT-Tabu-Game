@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/Button';
 import { PaywallModal } from '@/components/monetization/PaywallModal';
 import confetti from 'canvas-confetti';
 import { Trophy, Sparkles, RotateCcw, Home, Share2, Award, Check, Crown } from 'lucide-react';
+import { soundManager } from '@/lib/audio';
 import { analytics } from '@/lib/analytics';
 import { AiMatchSummary } from '@/types/game';
 
 export default function SummaryPage() {
   const router = useRouter();
-  const { teams, resetGame, gameState } = useGameStore();
+  const { teams, settings, initializeGame, resetGame, gameState } = useGameStore();
   const { totalGamesPlayed, incrementGamesPlayed, isProUser } = useUserStore();
 
   const [aiSummary, setAiSummary] = useState<AiMatchSummary | null>(null);
@@ -121,8 +122,9 @@ export default function SummaryPage() {
     }
   };
 
-  const handlePlayAgain = () => {
-    resetGame();
+  const handlePlayAgain = async () => {
+    soundManager.play('start');
+    await initializeGame(teams, settings);
     router.push('/play');
   };
 

@@ -32,6 +32,7 @@ export default function PlayPage() {
     endTurnAndNext,
     finishGameEarly,
     resetGame,
+    initializeGame,
   } = useGameStore();
 
   const [isPaused, setIsPaused] = useState(false);
@@ -61,10 +62,12 @@ export default function PlayPage() {
   // Keep screen on during active gameplay
   useWakeLock(gameState.status === 'in_progress');
 
-  // Handle game finish
+  // Handle game finish or idle initialization
   useEffect(() => {
     if (gameState.status === 'finished') {
       router.push('/summary');
+    } else if (gameState.status === 'idle') {
+      initializeGame(teams, settings);
     }
   }, [gameState.status, router]);
 

@@ -102,13 +102,8 @@ export default function HomePage() {
   const [isCharging, setIsCharging] = useState(false);
 
   const handleLaunchGameSetup = () => {
-    if (isCharging) return;
-    setIsCharging(true);
     soundManager.play('start');
-    setTimeout(() => {
-      setIsCharging(false);
-      setIsGameSetupOpen(true);
-    }, 450);
+    setIsGameSetupOpen(true);
   };
 
   const handleApplyAiMode = (mode: any) => {
