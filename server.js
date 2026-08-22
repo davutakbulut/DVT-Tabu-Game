@@ -4,7 +4,11 @@ const path = require('path');
 const next = require('next');
 
 const port = process.env.PORT || 3000;
-const dev = false;
+const hasBuild = fs.existsSync(path.join(__dirname, '.next', 'prerender-manifest.json'));
+const dev = !hasBuild;
+
+console.log(`> Initializing Next.js in ${dev ? 'on-the-fly JIT (build pending)' : 'production optimized'} mode...`);
+
 const app = next({ dev, dir: __dirname });
 const handle = app.getRequestHandler();
 
@@ -23,7 +27,9 @@ app.prepare()
       }
       
       handle(req, res);
-    }).listen(port);
+    }).listen(port, () => {
+      console.log(`> DVT Tabu Game server listening on port ${port}`);
+    });
   })
   .catch((err) => {
     console.error('Next.js startup error:', err);
