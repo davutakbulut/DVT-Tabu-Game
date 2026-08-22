@@ -3,27 +3,45 @@ const fs = require('fs');
 const path = require('path');
 
 const port = process.env.PORT || 3000;
-const nextDir = path.join(__dirname, '.next');
-const prerenderManifest = path.join(nextDir, 'prerender-manifest.json');
 
-// Helper to serve Let's Encrypt ACME challenge tokens
+// Helper to serve Let's Encrypt ACME challenge tokens (Windows path safe)
 function serveAcmeChallenge(req, res) {
-  if (req.url && req.url.startsWith('/.well-known/acme-challenge/')) {
-    const cleanPath = req.url.split('?')[0];
-    const filePath = path.join(__dirname, cleanPath);
-    if (fs.existsSync(filePath)) {
-      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-      fs.createReadStream(filePath).pipe(res);
-      return true;
+  if (req.url && req.url.includes('.well-known/acme-challenge/')) {
+    const token = req.url.split('/').pop().split('?')[0];
+    if (!token) return false;
+
+    const candidates = [
+      path.join(__dirname, '.well-known', 'acme-challenge', token),
+      path.join(__dirname, 'public', '.well-known', 'acme-challenge', token),
+      path.join(process.cwd(), '.well-known', 'acme-challenge', token),
+    ];
+
+    for (const filePath of candidates) {
+      if (fs.existsSync(filePath)) {
+        try {
+          const content = fs.readFileSync(filePath);
+          res.writeHead(200, {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Content-Length': Buffer.byteLength(content),
+          });
+          res.end(content);
+          return true;
+        } catch (e) {
+          console.error('Error reading ACME token:', e);
+        }
+      }
     }
   }
   return false;
 }
 
+const nextDir = path.join(__dirname, '.next');
+const prerenderManifest = path.join(nextDir, 'prerender-manifest.json');
+
 // 1. Fallback if build hasn't run yet
 if (!fs.existsSync(prerenderManifest)) {
   console.warn('Next.js production build (.next) not found. Serving temporary build notice.');
-  
+
   const server = http.createServer((req, res) => {
     if (serveAcmeChallenge(req, res)) return;
 
