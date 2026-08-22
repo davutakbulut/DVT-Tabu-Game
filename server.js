@@ -1,31 +1,58 @@
 const http = require('http');
-const { parse } = require('url');
-const next = require('next');
+const fs = require('fs');
+const path = require('path');
 
-const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev, dir: __dirname });
-const handle = app.getRequestHandler();
+// Diagnostic logger for Plesk Windows IIS
+function logBoot(msg) {
+  try {
+    const logPath = path.join(__dirname, 'iisnode_boot.log');
+    fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`);
+  } catch (e) {
+    // ignore
+  }
+}
 
-const port = process.env.PORT || 3000;
+logBoot('server.js starting up...');
 
-app.prepare()
-  .then(() => {
-    const server = http.createServer(async (req, res) => {
-      try {
-        const parsedUrl = parse(req.url, true);
-        await handle(req, res, parsedUrl);
-      } catch (err) {
-        console.error('Unhandled request error:', req.url, err);
-        res.statusCode = 500;
-        res.end('Internal Server Error');
-      }
+process.on('uncaughtException', (err) => {
+  logBoot('UNCAUGHT EXCEPTION: ' + (err && err.stack ? err.stack : err));
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logBoot('UNHANDLED REJECTION: ' + (reason && reason.stack ? reason.stack : reason));
+});
+
+try {
+  const next = require('next');
+  const dev = false;
+  const app = next({ dev, dir: __dirname });
+  const handle = app.getRequestHandler();
+
+  logBoot('Next.js instance created. Calling app.prepare()...');
+
+  app.prepare()
+    .then(() => {
+      logBoot('app.prepare() completed successfully.');
+
+      const server = http.createServer((req, res) => {
+        try {
+          handle(req, res);
+        } catch (err) {
+          logBoot('Error handling request: ' + req.url + ' -> ' + (err && err.stack ? err.stack : err));
+          res.statusCode = 500;
+          res.end('Server Error: ' + err.message);
+        }
+      });
+
+      const port = process.env.PORT || 3000;
+      server.listen(port, () => {
+        logBoot(`HTTP server listening on: ${port}`);
+      });
+    })
+    .catch((err) => {
+      logBoot('FATAL: app.prepare() failed: ' + (err && err.stack ? err.stack : err));
+      process.exit(1);
     });
-
-    server.listen(port, () => {
-      console.log(`> Tabu Game ready on ${port} (dev: ${dev})`);
-    });
-  })
-  .catch((err) => {
-    console.error('Error during app.prepare():', err);
-    process.exit(1);
-  });
+} catch (err) {
+  logBoot('FATAL: Top-level error in server.js: ' + (err && err.stack ? err.stack : err));
+}
