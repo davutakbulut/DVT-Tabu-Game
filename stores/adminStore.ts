@@ -8,7 +8,7 @@ interface AdminStoreState {
   getCurrentPin: () => string;
 }
 
-const DEFAULT_PINS = ['15789', 'admin2026', 'Akblt_15789'];
+const DEFAULT_PINS = ['12345', '15789', 'admin2026', 'Akblt_15789'];
 const STORAGE_KEY = 'dvt_admin_auth_token';
 const CUSTOM_PIN_KEY = 'dvt_custom_admin_pin';
 
