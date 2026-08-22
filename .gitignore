@@ -18,7 +18,9 @@ node_modules/
 *.pem
 
 # Local env files
+.env*
 .env*.local
+.env.production
 
 # Vercel
 .vercel
@@ -27,4 +29,4 @@ node_modules/
 *.tsbuildinfo
 next-env.d.ts
 supabase/.temp/
-.env.production
+
