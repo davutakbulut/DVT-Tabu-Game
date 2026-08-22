@@ -139,11 +139,11 @@ seedMockSessions();
 const pruneInactiveSessions = () => {
   const now = Date.now();
   const cutoff = now - 45000;
-  for (const [key, session] of activeSessionsMap.entries()) {
+  activeSessionsMap.forEach((session, key) => {
     if (session.lastActiveAt < cutoff) {
       activeSessionsMap.delete(key);
     }
-  }
+  });
 };
 
 // 1. POST /api/presence (Client Heartbeat)

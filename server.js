@@ -1,40 +1,31 @@
-const path = require('path');
-
-// CRITICAL for Windows IIS / iisnode: Force process cwd to application root
-try {
-  process.chdir(__dirname);
-} catch (e) {
-  console.error('Failed to chdir:', e);
-}
-
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = 'localhost';
 const port = process.env.PORT || 3000;
-const app = next({ 
-  dev: false, 
-  dir: path.resolve(__dirname),
-  conf: { distDir: '.next' }
-});
+
+// Initialize Next.js app
+const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-app.prepare()
-  .then(() => {
-    createServer(async (req, res) => {
-      try {
-        const parsedUrl = parse(req.url, true);
-        await handle(req, res, parsedUrl);
-      } catch (err) {
-        console.error('Request error:', err);
-        res.statusCode = 500;
-        res.end('Internal Server Error');
-      }
-    }).listen(port, () => {
-      console.log(`> DVT Tabu Game server listening on ${port}`);
-    });
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true);
+      await handle(req, res, parsedUrl);
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err);
+      res.statusCode = 500;
+      res.end('Internal Server Error');
+    }
   })
-  .catch((err) => {
-    console.error('Fatal Next.js prepare error:', err);
-    process.exit(1);
-  });
+    .once('error', (err) => {
+      console.error('Server Startup Error:', err);
+      process.exit(1);
+    })
+    .listen(port, () => {
+      console.log(`> DVT Tabu Game server running on port ${port} (NODE_ENV=${process.env.NODE_ENV})`);
+    });
+});
