@@ -6,11 +6,27 @@ const port = process.env.PORT || 3000;
 const nextDir = path.join(__dirname, '.next');
 const prerenderManifest = path.join(nextDir, 'prerender-manifest.json');
 
-// Check if Next.js build output exists
+// Helper to serve Let's Encrypt ACME challenge tokens
+function serveAcmeChallenge(req, res) {
+  if (req.url && req.url.startsWith('/.well-known/acme-challenge/')) {
+    const cleanPath = req.url.split('?')[0];
+    const filePath = path.join(__dirname, cleanPath);
+    if (fs.existsSync(filePath)) {
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+      fs.createReadStream(filePath).pipe(res);
+      return true;
+    }
+  }
+  return false;
+}
+
+// 1. Fallback if build hasn't run yet
 if (!fs.existsSync(prerenderManifest)) {
   console.warn('Next.js production build (.next) not found. Serving temporary build notice.');
   
   const server = http.createServer((req, res) => {
+    if (serveAcmeChallenge(req, res)) return;
+
     res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(`
       <!DOCTYPE html>
@@ -40,6 +56,7 @@ if (!fs.existsSync(prerenderManifest)) {
 
   server.listen(port);
 } else {
+  // 2. Production Next.js server
   const next = require('next');
   const dev = false;
   const app = next({ dev, dir: __dirname });
@@ -48,6 +65,7 @@ if (!fs.existsSync(prerenderManifest)) {
   app.prepare()
     .then(() => {
       http.createServer((req, res) => {
+        if (serveAcmeChallenge(req, res)) return;
         handle(req, res);
       }).listen(port);
     })
